@@ -1,0 +1,7 @@
+# Modified from: http://desktop.docker.com/mcp/catalog/v2/catalog.yaml
+version: 2
+name: r-mcp-catalog
+displayName: R MCP Catalog
+registry:
+  r-mcp:
+    image: invent-tools

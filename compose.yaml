@@ -1,0 +1,63 @@
+# Using this project name, `docker compose build` creates images named invent-tools and invent-agent
+# https://docs.docker.com/compose/how-tos/environment-variables/envvars/#compose_project_name
+name: invent
+
+services:
+
+  # Service name (must be lowercase)
+  tools:
+    build:
+      # The directory containing the Dockerfile
+      context: .
+      # Which stage to build from the Dockerfile
+      target: r-ver
+    develop:
+      # Whenever a file is changed, Compose syncs the file to the corresponding
+      # inside the container, then the bundler updates the running application.
+      watch:
+        - action: rebuild
+          path: server.R
+          target: /
+
+  agent:
+    build:
+      context: .
+      target: adk
+    ports:
+      # Expose port for web interface
+      - "8080:8080"
+    environment:
+      # The gateway endpoint is the MCP server seen by ADK
+      - MCPGATEWAY_ENDPOINT=http://mcp-gateway:8811/sse
+    depends_on:
+      # Start MCP Gateway before the agent service
+      - mcp-gateway
+    secrets:
+      - openai-api-key
+    develop:
+      watch:
+        - action: sync
+          path: random-agent
+          target: /app/random-agent
+
+  mcp-gateway:
+    # Use MCP Gateway to route to multiple MCP servers
+    # https://github.com/docker/mcp-gateway/blob/main/docs/mcp-gateway.md
+    image: docker/mcp-gateway:latest
+    use_api_socket: true
+    volumes:
+      # Mount the custom MCP catalog
+      - ./catalog.yaml:/catalog.yaml:ro
+    command:
+      - --transport=sse
+      # Use a custom catalog
+      - --catalog=/catalog.yaml
+      # Which servers to use
+      - --servers=r-mcp
+    depends_on:
+      # Start the tools service before MCP Gateway
+      - tools
+
+secrets:
+  openai-api-key:
+    file: secret.openai-api-key
