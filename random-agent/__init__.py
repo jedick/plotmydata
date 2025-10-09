@@ -28,3 +28,7 @@ logging.getLogger("litellm").setLevel(logging.WARNING)  # Also reduce this
 logging.getLogger("httpx").setLevel(logging.WARNING)  # Reduce HTTP logs
 logging.getLogger("httpcore").setLevel(logging.WARNING)  # Reduce HTTP core logs
 litellm.set_verbose = False  # Disable raw HTTP logs
+
+# Disable "WARNING - auth_config or auth_config.auth_scheme is missing." for every tool listing
+# https://github.com/google/adk-python/issues/2200
+logging.getLogger("google_adk.google.adk.tools.base_authenticated_tool").setLevel(logging.ERROR)

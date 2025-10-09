@@ -20,7 +20,7 @@ We use [Docker Compose] to connect an [Agent Development Kit] client to an MCP s
 
 ## Build and run the project (OpenAI)
 
-To use gpt-4o-mini as the LLM, put your OpenAI API key (`sk-proj-...`) in `secret.openai-api-key`, then run this command.
+Build the project:
 
 ```sh
 docker compose build
@@ -31,7 +31,8 @@ This creates a compose **project** and three **images**:
 - `docker compose ls -a`: invent
 - `docker images`: invent-tools, invent-agent, docker/mcp-gateway
 
-Now it's time to run the project!
+Next, put your OpenAI API key (`sk-proj-...`) in `secret.openai-api-key`.
+Then run the project:
 
 ```sh
 docker compose up
@@ -39,7 +40,8 @@ docker compose up
 
 You can access the ADK Dev UI at <http://localhost:8080>.
 
-In case you want to use a different model, change it in `entrypoint.sh`.
+The LLM used here is gpt-4o-mini.
+If you want to use a different model, change it in `entrypoint.sh`.
 
 ## Run the project (local LLM)
 
@@ -53,7 +55,7 @@ The LLM used here is [Gemma 3]; this can be changed in `model-runner.yaml`.
 
 ## Develop the project (in container)
 
-With this command, changes you make to the R and Python code on the host computer are immediately reflected in the running project.
+With this command, changes you make to the R and Python code on the host computer are reflected in the running project.
 
 ```sh
 docker compose watch
@@ -89,7 +91,7 @@ OPENAI_API_KEY=your-api-key adk web --reload_agents
 - The [Docker MCP Gateway] routes requests to MCP servers (just one in our case)
   - A custom `catalog.yaml` makes our R MCP server visible to the MCP Gateway
   - For more options, see [MCP Gateway docs] and [Docker MCP Catalog] for the default `catalog.yaml`
-- Specific actions are used for [Docker Watch]:
+- Specific actions are used for [Docker Watch]
   - `action: rebuild` is used for `server.R` because we need to restart the MCP server if the R code changes
   - `action: sync` is used for `random-agent` because the ADK web server supports hot reloading with the
     [`--reload_agents`](https://github.com/google/adk-python/commit/e545e5a570c1331d2ed8fda31c7244b5e0f71584) flag
@@ -106,19 +108,19 @@ In these examples, the user describes the problem and the agent chooses a distri
 
 ![AI agent uses R `rhyper` function in response to "Draw 10 balls from a box of 20 total balls (5 red, 15 blue). Do this twice and list the number of red balls drawn in each trial."](https://chnosz.net/guest/invent/rhyper.png)
 
-## Tool Reference
+## Tool reference
 
 
 The following distributions are available for generating random numbers.
 See the [R help page on Distributions] for more information.
 
-**Discrete Distributions:**
+**Discrete distributions**
 
-Binomial Distribution, Poisson Distribution, Geometric Distribution, Hypergeometric Distribution, Multinomial Distribution, Negative Binomial Distribution
+Binomial distribution, Poisson distribution, geometric distribution, hypergeometric distribution, multinomial distribution, negative binomial distribution
 
-**Continuous Distributions:**
+**Continuous distributions**
 
-Normal Distribution, Uniform Distribution, Exponential Distribution, Chi-Squared Distribution, Student's t Distribution, Gamma Distribution, Beta Distribution, Cauchy Distribution, F Distribution, Log-Normal Distribution, Weibull Distribution
+Normal distribution, uniform distribution, exponential distribution, chi-squared distribution, Student *t* Distribution, gamma Distribution, beta distribution, Cauchy distribution, *F* distribution, log-normal distribution, Weibull distribution
 
 [Docker Compose]: https://docs.docker.com/compose/
 [Agent Development Kit]: https://google.github.io/adk-docs/

@@ -11,8 +11,10 @@ services:
     environment:
       # Base URL for the model (OpenAI API-compatible endpoint)
       - MODEL_RUNNER_URL=http://model-runner.docker.internal:12434/engines/llama.cpp/v1
-      # Model to use
-      - MODEL_RUNNER_MODEL=ai/gemma3:4B-Q4_0
+      # Model to use (Docker Hub models start with ai/)
+      #- MODEL_RUNNER_MODEL=ai/gemma3-qat:12B-Q4_K_M
+      # Use instruction-tuned model for better performance
+      - MODEL_RUNNER_MODEL=hf.co/unsloth/gemma-3-12b-it-gguf:q8_0
     extra_hosts:
       # Used to make the API endpoint available in the container
       # https://docs.docker.com/ai/model-runner/#what-api-endpoints-are-available
@@ -23,7 +25,9 @@ services:
 models:
   gemma3:
     # Pre-pull the model when starting Docker Model Runner
-    model: ai/gemma3:4B-Q4_0
-    context_size: 10000 # 3.5 GB VRAM
+    #model: ai/gemma3-qat:12B-Q4_K_M
+    model: hf.co/unsloth/gemma-3-12b-it-gguf:q8_0
+    context_size: 10000
 
+# Reset openai-api-key so that entrypoint.sh configures app to use Model Runner
 secrets: !reset []
