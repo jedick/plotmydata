@@ -86,7 +86,7 @@ OPENAI_API_KEY=your-api-key adk web --reload_agents
 - The `invent-tools` image is based on [rocker/v-ver]
   - `server.R` defines **18 tools** to generate random numbers from various probability distributions
 - The `invent-agent` image is based on [Docker Python slim]
-  - `random-agent/agent.py` defines an **MCPToolset** that is passed to the LLM along with instructions for using the tools
+  - `random-agent/agent.py` defines an **McpToolset** that is passed to the LLM along with instructions for using the tools
   - `random-agent/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
 - The [Docker MCP Gateway] routes requests to MCP servers (just one in our case)
   - A custom `catalog.yaml` makes our R MCP server visible to the MCP Gateway

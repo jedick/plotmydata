@@ -1,5 +1,5 @@
 from google.adk.tools.mcp_tool.mcp_session_manager import SseConnectionParams
-from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
+from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.models.lite_llm import LiteLlm
 from google.adk import Agent
 import os
@@ -9,9 +9,9 @@ import os
 # Optional: Filter specific tools
 # tool_filter = ["rnorm"]
 
-# Define the MCPToolset with connection parameters
+# Define the McpToolset with connection parameters
 url = os.environ["MCPGATEWAY_ENDPOINT"]
-mcp_toolset = MCPToolset(
+mcp_toolset = McpToolset(
     connection_params=SseConnectionParams(url=url),
     # tool_filter = tool_filter,
 )
