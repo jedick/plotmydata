@@ -1,22 +1,36 @@
 from google.adk.tools.mcp_tool.mcp_session_manager import SseConnectionParams
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.models.lite_llm import LiteLlm
-from google.adk import Agent
+from google.adk.agents import LlmAgent
 import os
 
-"""Statistics agent for performing computations using R functions."""
-
-# Optional: Filter specific tools
-# tool_filter = ["rnorm"]
-
-# Define the McpToolset with connection parameters
+# Define MCP connection parameters
 url = os.environ["MCPGATEWAY_ENDPOINT"]
-mcp_toolset = McpToolset(
-    connection_params=SseConnectionParams(url=url),
-    # tool_filter = tool_filter,
+
+# Define model
+# If we're using the OpenAI API, get the value of OPENAI_MODEL_NAME set by entrypoint.sh
+# If we're using an OpenAI-compatible endpoint (Docker Model Runner), use a fake API key
+model=LiteLlm(
+    model=os.environ.get("OPENAI_MODEL_NAME", ""),
+    api_key=os.environ.get("OPENAI_API_KEY", "fake-API-key"),
 )
 
-instruction = """
+"""Agent for generating random numbers."""
+
+# Filter tools for random numbers
+random_filter = [
+    # Discrete
+    "rbinom", "rpois", "rgeom", "rhyper", "rmultinom", "rbinom",
+    # Continuous
+    "rnorm", "runif", "rexp", "rchisq", "rt", "rgamma", "rbeta", "rcauchy", "rf", "rlogis", "rlnorm", "rweibull",
+]
+# Define the McpToolset with connection parameters
+random_toolset = McpToolset(
+    connection_params=SseConnectionParams(url=url),
+    tool_filter = random_filter,
+)
+
+random_instruction = """
 You are a helpful agent who can generate random numbers from various distributions.
 Only generate random numbers if the user specifies the distribution.
 Otherwise, tell the user what distributions are available.
@@ -58,14 +72,57 @@ The F distribution requires `df1` and `df2` (degrees of freedom).
 The Weibull distribution requires `shape` (shape parameter).
 """
 
-root_agent = Agent(
-    # If we're using the OpenAI API, get the value of OPENAI_MODEL_NAME set by entrypoint.sh
-    # If we're using an OpenAI-compatible endpoint (Docker Model Runner), use a fake API key
-    model=LiteLlm(
-        model=os.environ.get("OPENAI_MODEL_NAME", ""),
-        api_key=os.environ.get("OPENAI_API_KEY", "fake-API-key"),
-    ),
-    name="statistics_agent",
-    instruction=instruction,
-    tools=[mcp_toolset],
+random_agent = LlmAgent(
+    name="random_agent",
+    description="Agent for generating random numbers using R functions",
+    model=model,
+    instruction=random_instruction,
+    tools=[random_toolset],
+)
+
+"""Agent for making scatterplots."""
+
+# Filter tools for plotting
+plot_filter = ["mkplot"]
+# Define the McpToolset with connection parameters
+plot_toolset = McpToolset(
+    connection_params=SseConnectionParams(url=url),
+    tool_filter = plot_filter,
+)
+
+plot_instruction = """
+You are a helpful agent who can make scatterplots.
+The required values are in the `x` and `y` arguments.
+The `type` argument is optional and can be used to change the plot type (points, lines, or both).
+"""
+
+plot_agent = LlmAgent(
+    name="plot_agent",
+    description="Agent for making scatterplots using R",
+    model=model,
+    instruction=plot_instruction,
+    tools=[plot_toolset],
+)
+
+root_description= """
+I route requests to agents for generating random numbers or plotting data using R functions.
+"""
+
+root_instruction = """
+You are the coordinator of a multi-agent system for running R functions based on the user's request.
+Use random_agent for generating random numbers and plot_agent for plotting data.
+If the user asks for capabilities or availability of functions, route the request to the appropriate agent.
+If a suitable agent is not available, inform the user.
+"""
+
+# Create parent agent and assign children via sub_agents
+root_agent = LlmAgent(
+    name="Coordinator",
+    description=root_description,
+    model=model,
+    instruction=root_instruction,
+    sub_agents=[ # Assign sub_agents here
+        random_agent,
+        plot_agent,
+    ]
 )

@@ -1,4 +1,4 @@
-# Invent! Agents and R
+# Plot My Data (in R with AI Agents)
 
 To solve real-world problems, AI agents need to choose the correct tool to use.
 The aim of this project is to engineer an ecosystem of AI agents and tools to support intuitive conversational execution of statistical functions.
@@ -6,7 +6,7 @@ The aim of this project is to engineer an ecosystem of AI agents and tools to su
 The current implementation is an AI agent that can produce random numbers from various probability distributions.
 It's made with industry-standard components, representing a foundation for building natural language interfaces for complex workflows.
 
-![AI agent uses R `rbinom` function in response to "Simulate 100 coin tosses and count the number of heads."](https://chnosz.net/guest/invent/rbinom.png)
+![AI agent uses R `rbinom` function in response to "Simulate 100 coin tosses and count the number of heads."](https://chnosz.net/guest/plotmydata/rbinom.png)
 
 ## Overview
 
@@ -16,7 +16,7 @@ We use [Docker Compose] to connect an [Agent Development Kit] client to an MCP s
 - Docker Compose supports definitions of containerized AI agents and one or more MCP servers (through Docker MCP Gateway) for scalable and secure deployment.
 - R offers many statistical functions that can be exposed through an MCP server with the mcptools package.
 
-"invent" was chosen as the Docker Compose project name to make it easier to find in log messages, image names, etc.
+"plotmydata" was chosen as the Docker Compose project name to make it easier to find in log messages, image names, etc.
 
 ## Build and run the project (OpenAI)
 
@@ -28,8 +28,8 @@ docker compose build
 
 This creates a compose **project** and three **images**:
 
-- `docker compose ls -a`: invent
-- `docker images`: invent-tools, invent-agent, docker/mcp-gateway
+- `docker compose ls -a`: plotmydata
+- `docker images`: plotmydata-tools, plotmydata-agent, docker/mcp-gateway
 
 Next, put your OpenAI API key (`sk-proj-...`) in `secret.openai-api-key`.
 Then run the project:
@@ -83,17 +83,17 @@ OPENAI_API_KEY=your-api-key adk web --reload_agents
 
 ## Under the hood
 
-- The `invent-tools` image is based on [rocker/v-ver]
+- The `plotmydata-tools` image is based on [rocker/v-ver]
   - `server.R` defines **18 tools** to generate random numbers from various probability distributions
-- The `invent-agent` image is based on [Docker Python slim]
-  - `random-agent/agent.py` defines an **McpToolset** that is passed to the LLM along with instructions for using the tools
-  - `random-agent/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
+- The `plotmydata-agent` image is based on [Docker Python slim]
+  - `R-agent/agent.py` defines an **McpToolset** that is passed to the LLM along with instructions for using the tools
+  - `R-agent/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
 - The [Docker MCP Gateway] routes requests to MCP servers (just one in our case)
   - A custom `catalog.yaml` makes our R MCP server visible to the MCP Gateway
   - For more options, see [MCP Gateway docs] and [Docker MCP Catalog] for the default `catalog.yaml`
 - Specific actions are used for [Docker Watch]
   - `action: rebuild` is used for `server.R` because we need to restart the MCP server if the R code changes
-  - `action: sync` is used for `random-agent` because the ADK web server supports hot reloading with the
+  - `action: sync` is used for `R-agent` because the ADK web server supports hot reloading with the
     [`--reload_agents`](https://github.com/google/adk-python/commit/e545e5a570c1331d2ed8fda31c7244b5e0f71584) flag
   
 ## Examples
@@ -102,11 +102,11 @@ In these examples, the user describes the problem and the agent chooses a distri
 
 - Uniform distribution
 
-![AI agent uses R `runif` function in response to "Draw 5 random numbers between 0 and 100. Choose the distribution that is appropriate for this problem."](https://chnosz.net/guest/invent/runif.png)
+![AI agent uses R `runif` function in response to "Draw 5 random numbers between 0 and 100. Choose the distribution that is appropriate for this problem."](https://chnosz.net/guest/plotmydata/runif.png)
 
 - Hypergeometric distribution
 
-![AI agent uses R `rhyper` function in response to "Draw 10 balls from a box of 20 total balls (5 red, 15 blue). Do this twice and list the number of red balls drawn in each trial."](https://chnosz.net/guest/invent/rhyper.png)
+![AI agent uses R `rhyper` function in response to "Draw 10 balls from a box of 20 total balls (5 red, 15 blue). Do this twice and list the number of red balls drawn in each trial."](https://chnosz.net/guest/plotmydata/rhyper.png)
 
 ## Tool reference
 

@@ -27,7 +27,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 # Copy source files and compile to bytecode
-COPY random-agent random-agent
+COPY R-agent R-agent
 RUN python -m compileall -q .
 
 # Copy startup script

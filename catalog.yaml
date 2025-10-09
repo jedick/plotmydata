@@ -4,4 +4,4 @@ name: r-mcp-catalog
 displayName: R MCP Catalog
 registry:
   r-mcp:
-    image: invent-tools
+    image: plotmydata-tools

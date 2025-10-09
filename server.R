@@ -1,8 +1,14 @@
-# Tool definitions created on 2025-08-08
-# Text descriptions were modified from R help pages for each distribution and from ?mcptools::mcp_server (for rnorm)
+# 20250808 Added tool definitions for random number functions
+#   Text descriptions were modified from R help pages for each distribution and from ?mcptools::mcp_server (for rnorm)
+# 20251009 Added plot tool
 
 # Load ellmer for tool() and type_*()
 library(ellmer)
+
+# Define custom plot function with explicit arguments
+mkplot <- function(x, y, type = "p") {
+  plot(x, y, type = type)
+}
 
 mcptools::mcp_server(tools = list(
 
@@ -192,6 +198,16 @@ mcptools::mcp_server(tools = list(
       n = type_integer("Number of observations. Must be a positive integer."),
       shape = type_number("Shape parameter."),
       scale = type_number("Scale parameter.", required = FALSE)
+    )
+  ),
+
+  tool(
+    mkplot,
+    "Make a plot",
+    arguments = list(
+      x = type_array(type_number("Vector of x values.")),
+      y = type_array(type_number("Vector of y values.")),
+      type = type_string("Type of plot: 'p' for points, 'l' for lines, 'b' for both.", required = FALSE)
     )
   )
 

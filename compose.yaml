@@ -1,6 +1,6 @@
-# Using this project name, `docker compose build` creates images named invent-tools and invent-agent
+# Using this project name, `docker compose build` creates images named plotmydata-tools and plotmydata-agent
 # https://docs.docker.com/compose/how-tos/environment-variables/envvars/#compose_project_name
-name: invent
+name: plotmydata
 
 services:
 
@@ -12,8 +12,8 @@ services:
       # Which stage to build from the Dockerfile
       target: r-ver
     develop:
-      # Whenever a file is changed, Compose syncs the file to the corresponding
-      # inside the container, then the bundler updates the running application.
+      # Whenever a file is changed, Compose syncs the file to the
+      # container, then the bundler updates the running application.
       watch:
         - action: rebuild
           path: server.R
@@ -37,8 +37,8 @@ services:
     develop:
       watch:
         - action: sync
-          path: random-agent
-          target: /app/random-agent
+          path: R-agent
+          target: /app/R-agent
 
   mcp-gateway:
     # Use MCP Gateway to route to multiple MCP servers
