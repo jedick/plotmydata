@@ -7,7 +7,22 @@ library(ellmer)
 
 # Define custom plot function with explicit arguments
 mkplot <- function(x, y, type = "p") {
+  # Cursor, Bing and Google AI all suggest this but it causes an error:
+  # Error in png(filename = raw_conn) : 
+  #   'filename' must be a non-empty character string
+  ## Write plot to an in-memory PNG
+  #raw_conn <- rawConnection(raw(), open = "wb")
+  #png(filename = raw_conn)
+
+  # Write PNG to a temporary file
+  # Modified from https://hypatia.math.ethz.ch/pipermail/r-help/2023-May/477468.html
+  filename <- tempfile(fileext = ".png")
+  on.exit(unlink(filename))
+  png(filename)
   plot(x, y, type = type)
+  dev.off()
+  # Return a PNG image as raw bytes so ADK can save it as an artifact
+  readr::read_file_raw(filename)
 }
 
 mcptools::mcp_server(tools = list(

@@ -4,7 +4,7 @@
 FROM rocker/r-ver AS r-ver
 
 # Install R packages
-RUN R -q -e 'install.packages(c("ellmer", "mcptools"))'
+RUN R -q -e 'install.packages(c("ellmer", "mcptools", "readr"))'
 
 # Copy the project files
 COPY server.R .

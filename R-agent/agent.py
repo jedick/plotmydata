@@ -2,6 +2,12 @@ from google.adk.tools.mcp_tool.mcp_session_manager import SseConnectionParams
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.agents import LlmAgent
+from google.genai.types import Part
+from google.adk.tools.tool_context import ToolContext
+from google.adk.tools.base_tool import BaseTool
+from typing import Dict, Any, Optional
+from mcp import types
+import base64
 import os
 
 # Define MCP connection parameters
@@ -10,7 +16,7 @@ url = os.environ["MCPGATEWAY_ENDPOINT"]
 # Define model
 # If we're using the OpenAI API, get the value of OPENAI_MODEL_NAME set by entrypoint.sh
 # If we're using an OpenAI-compatible endpoint (Docker Model Runner), use a fake API key
-model=LiteLlm(
+model = LiteLlm(
     model=os.environ.get("OPENAI_MODEL_NAME", ""),
     api_key=os.environ.get("OPENAI_API_KEY", "fake-API-key"),
 )
@@ -19,15 +25,17 @@ model=LiteLlm(
 
 # Filter tools for random numbers
 random_filter = [
+    # fmt: off
     # Discrete
     "rbinom", "rpois", "rgeom", "rhyper", "rmultinom", "rbinom",
     # Continuous
     "rnorm", "runif", "rexp", "rchisq", "rt", "rgamma", "rbeta", "rcauchy", "rf", "rlogis", "rlnorm", "rweibull",
+    # fmt: on
 ]
 # Define the McpToolset with connection parameters
 random_toolset = McpToolset(
     connection_params=SseConnectionParams(url=url),
-    tool_filter = random_filter,
+    tool_filter=random_filter,
 )
 
 random_instruction = """
@@ -87,7 +95,7 @@ plot_filter = ["mkplot"]
 # Define the McpToolset with connection parameters
 plot_toolset = McpToolset(
     connection_params=SseConnectionParams(url=url),
-    tool_filter = plot_filter,
+    tool_filter=plot_filter,
 )
 
 plot_instruction = """
@@ -96,15 +104,47 @@ The required values are in the `x` and `y` arguments.
 The `type` argument is optional and can be used to change the plot type (points, lines, or both).
 """
 
+
+# Callback function to save PNG returned from mkplot() as an ADK artifact
+async def save_plot_artifact(
+    tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, tool_response: Dict
+) -> Optional[Dict]:
+    if tool.name == "mkplot":
+        # tool_response is a CallToolResult (type from mcp)
+        # https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#parsing-tool-results
+        for content in tool_response.content:
+            if isinstance(content, types.TextContent):
+                # Convert mkplot tool response (hex string) to bytes
+                byte_data = bytes.fromhex(content.text)
+                # Encode binary data to Base64 format
+                encoded = base64.b64encode(byte_data).decode("utf-8")
+                artifact_part = Part(
+                    inline_data={
+                        "data": encoded,
+                        "mime_type": "image/png",
+                    }
+                )
+                # TODO: Use unique filename
+                filename = "mkplot.png"
+                await tool_context.save_artifact(
+                    filename=filename, artifact=artifact_part
+                )
+                return "Plot saved as artifact: {filename}"
+
+    # Passthrough for other tools no matching content
+    return None
+
+
 plot_agent = LlmAgent(
     name="plot_agent",
     description="Agent for making scatterplots using R",
     model=model,
     instruction=plot_instruction,
     tools=[plot_toolset],
+    after_tool_callback=save_plot_artifact,
 )
 
-root_description= """
+root_description = """
 I route requests to agents for generating random numbers or plotting data using R functions.
 """
 
@@ -121,8 +161,8 @@ root_agent = LlmAgent(
     description=root_description,
     model=model,
     instruction=root_instruction,
-    sub_agents=[ # Assign sub_agents here
+    sub_agents=[  # Assign sub_agents here
         random_agent,
         plot_agent,
-    ]
+    ],
 )
