@@ -37,8 +37,8 @@ services:
     develop:
       watch:
         - action: sync
-          path: R-agent
-          target: /app/R-agent
+          path: PlotMyData
+          target: /app/PlotMyData
 
   mcp-gateway:
     # Use MCP Gateway to route to multiple MCP servers

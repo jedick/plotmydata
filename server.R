@@ -58,6 +58,12 @@ Continuous <- function(name, n, mean=0, sd=1, min=0, max=1, rate=1, df, ncp=0, n
   )
 }
 
+# Run any R code
+# https://github.com/posit-dev/mcptools/issues/71
+Run <- function(code) {
+  eval(parse(text = code), globalenv())
+}
+
 mcptools::mcp_server(tools = list(
 
   # Discrete probability distributions
@@ -121,6 +127,14 @@ mcptools::mcp_server(tools = list(
       x = type_array(type_number("Vector of x values.")),
       y = type_array(type_number("Vector of y values.")),
       type = type_string("Type of plot: 'p' for points, 'l' for lines, 'b' for both.", required = FALSE)
+    )
+  ),
+
+  tool(
+    Run,
+    "Run R Code",
+    arguments = list(
+      code = type_string("R code to run, formatted as plain text.")
     )
   )
 

@@ -27,7 +27,8 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 # Copy source files and compile to bytecode
-COPY R-agent R-agent
+COPY prompts.py .
+COPY PlotMyData PlotMyData
 RUN python -m compileall -q .
 
 # Copy startup script

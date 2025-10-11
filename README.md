@@ -1,10 +1,13 @@
-# Plot My Data (in R with AI Agents)
+# Plot My Data - using R with AI Agents
 
-To solve real-world problems, AI agents need to choose the correct tool to use.
-The aim of this project is to engineer an ecosystem of AI agents and tools to support intuitive conversational execution of statistical functions.
+The R software environment is an open-source platform for statistics, data analysis and visualization.
+To help R users solve real-world problems, AI agents need access to tools and guidance about their usage.
 
-The current implementation is an AI agent that can produce random numbers from various probability distributions.
-It's made with industry-standard components, representing a foundation for building natural language interfaces for complex workflows.
+The aim of this project is to build an intuitive conversational interface to powerful plotting function.
+To do this, we are engineering an ecosystem of AI agents and tools that can make plots, generate random numbers, and run R code.
+
+A data-first approach to AI development using known-good traces as evaluation baselines ensures that the system works as expected.
+It's made with industry-standard components, supporting different models and scalable deployment options.
 
 ![AI agent uses R `rbinom` function in response to "Simulate 100 coin tosses and count the number of heads."](https://chnosz.net/guest/plotmydata/rbinom.png)
 
@@ -16,49 +19,12 @@ We use [Docker Compose] to connect an [Agent Development Kit] client to an MCP s
 - Docker Compose supports definitions of containerized AI agents and one or more MCP servers (through Docker MCP Gateway) for scalable and secure deployment.
 - R offers many statistical functions that can be exposed through an MCP server with the mcptools package.
 
-"plotmydata" was chosen as the Docker Compose project name to make it easier to find in log messages, image names, etc.
+## Running the project
 
-## Build and run the project with OpenAI
-
-Build the project:
-
-```sh
-docker compose build
-```
-
-This creates a compose **project** and three **images**:
-
-- `docker compose ls -a`: plotmydata
-- `docker images`: plotmydata-tools, plotmydata-agent, docker/mcp-gateway
-
-Next, put your OpenAI API key (`sk-proj-...`) in `secret.openai-api-key`.
-Then run the project:
-
-```sh
-docker compose up
-```
-
-You can access the ADK Dev UI at <http://localhost:8080>.
-
-The LLM used here is gpt-4o-mini.
-If you want to use a different model, change it in `entrypoint.sh`.
-
-## Run the project with a local LLM
-
-To use a local LLM running on your GPU, install [Docker Model Runner] before running this command.
-
-```sh
-docker compose -f compose.yaml -f model-runner.yaml up
-```
-
-The LLM used here is [Gemma 3]; this can be changed in `model-runner.yaml`.
-
-## Develop the project
-
-There are three modes of developing the project with increasing degrees of containerization.
+There are three modes of running the project with increasing degrees of containerization.
 The first two modes require local installation of the Python packages listed in `requirements.txt`.
 
-1. **Containerless:** Start the ADK web UI with stdio transport to the mcptools MCP server (requires a local installation of R):
+1. **Containerless:** Start the ADK web server with stdio transport to the mcptools MCP server (requires a local installation of R):
 
 ```sh
 unset MCPGATEWAY_ENDPOINT
@@ -68,37 +34,71 @@ OPENAI_API_KEY=your-api-key adk web --reload_agents
 
 `run.sh` is a shortcut to these commands, taking the API key from `secret.openai-api-key`.
 
+2. **Containerized MCP server:** Start the ADK web server with SSE transport to Docker's MCP Gateway:
 
-2. **Containerized MCP server:** Start the ADK web UI with SSE transport to Docker's MCP Gateway (requires the plotmydata-tools and docker/mcp-gateway images):
+This requires the plotmydata-tools and docker/mcp-gateway images (see below):
 
 ```sh
 docker mcp gateway run --catalog=./catalog.yaml --servers=r-mcp --transport=sse --port=8811
+```
+
+In a different terminal:
+
+```sh
 export MCPGATEWAY_ENDPOINT=http://127.0.0.1:8811
 export OPENAI_MODEL_NAME=gpt-4o-mini
 OPENAI_API_KEY=your-api-key adk web --reload_agents
 ```
 
-3. **Full containerization:** With this command, changes you make to the R and Python code on the host computer are reflected in the running project.
+3. **Full containerization:**
+
+First, build the project.
+This creates a compose **project** (plotmydata) and three **images** (plotmydata-tools, plotmydata-agent, docker/mcp-gateway):
+
+```sh
+docker compose build
+```
+
+Next, put your OpenAI API key (`sk-proj-...`) in `secret.openai-api-key`.
+Then run the project:
+
+```sh
+docker compose up
+```
+
+Press `w` to start watching file changes.
+Alternatively, use this command so changes to the R and Python code on the host computer are reflected in the running project.
 
 ```sh
 docker compose watch
 ```
 
-Alternatively, start the project with one of the `docker compose` commands described previously and press `w` to start watching file changes.
+## Changing the model
+
+The remote LLM is gpt-4o-mini.
+If you want to use a different one, change it in `entrypoint.sh`.
+
+To use a local LLM running on your GPU, install [Docker Model Runner] before running this command.
+
+```sh
+docker compose -f compose.yaml -f model-runner.yaml up
+```
+
+The local LLM is [Gemma 3]; this can be changed in `model-runner.yaml`.
 
 ## Under the hood
 
 - The `plotmydata-tools` image is based on [rocker/v-ver]
   - `server.R` defines **18 tools** to generate random numbers from various probability distributions
 - The `plotmydata-agent` image is based on [Docker Python slim]
-  - `R-agent/agent.py` defines an **McpToolset** that is passed to the LLM along with instructions for using the tools
-  - `R-agent/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
+  - `PlotMyData/agent.py` defines an **McpToolset** that is passed to the LLM along with instructions for using the tools
+  - `PlotMyData/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
 - The [Docker MCP Gateway] routes requests to MCP servers (just one in our case)
   - A custom `catalog.yaml` makes our R MCP server visible to the MCP Gateway
   - For more options, see [MCP Gateway docs] and [Docker MCP Catalog] for the default `catalog.yaml`
 - Specific actions are used for [Docker Watch]
   - `action: rebuild` is used for `server.R` because we need to restart the MCP server if the R code changes
-  - `action: sync` is used for `R-agent` because the ADK web server supports hot reloading with the
+  - `action: sync` is used for `PlotMyData` because the ADK web server supports hot reloading with the
     [`--reload_agents`](https://github.com/google/adk-python/commit/e545e5a570c1331d2ed8fda31c7244b5e0f71584) flag
   
 ## Examples
