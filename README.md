@@ -18,7 +18,7 @@ We use [Docker Compose] to connect an [Agent Development Kit] client to an MCP s
 
 "plotmydata" was chosen as the Docker Compose project name to make it easier to find in log messages, image names, etc.
 
-## Build and run the project (OpenAI)
+## Build and run the project with OpenAI
 
 Build the project:
 
@@ -43,7 +43,7 @@ You can access the ADK Dev UI at <http://localhost:8080>.
 The LLM used here is gpt-4o-mini.
 If you want to use a different model, change it in `entrypoint.sh`.
 
-## Run the project (local LLM)
+## Run the project with a local LLM
 
 To use a local LLM running on your GPU, install [Docker Model Runner] before running this command.
 
@@ -53,33 +53,38 @@ docker compose -f compose.yaml -f model-runner.yaml up
 
 The LLM used here is [Gemma 3]; this can be changed in `model-runner.yaml`.
 
-## Develop the project (in container)
+## Develop the project
 
-With this command, changes you make to the R and Python code on the host computer are reflected in the running project.
+There are three modes of developing the project with increasing degrees of containerization.
+The first two modes require local installation of the Python packages listed in `requirements.txt`.
+
+1. **Containerless:** Start the ADK web UI with stdio transport to the mcptools MCP server (requires a local installation of R):
+
+```sh
+unset MCPGATEWAY_ENDPOINT
+export OPENAI_MODEL_NAME=gpt-4o-mini
+OPENAI_API_KEY=your-api-key adk web --reload_agents
+```
+
+`run.sh` is a shortcut to these commands, taking the API key from `secret.openai-api-key`.
+
+
+2. **Containerized MCP server:** Start the ADK web UI with SSE transport to Docker's MCP Gateway (requires the plotmydata-tools and docker/mcp-gateway images):
+
+```sh
+docker mcp gateway run --catalog=./catalog.yaml --servers=r-mcp --transport=sse --port=8811
+export MCPGATEWAY_ENDPOINT=http://127.0.0.1:8811
+export OPENAI_MODEL_NAME=gpt-4o-mini
+OPENAI_API_KEY=your-api-key adk web --reload_agents
+```
+
+3. **Full containerization:** With this command, changes you make to the R and Python code on the host computer are reflected in the running project.
 
 ```sh
 docker compose watch
 ```
 
-Alternatively, start the project with one of the previous commands and press `w` to start watching file changes.
-
-## Develop the project (on host system)
-
-Make sure to install the packages listed in `requirements.txt`.
-
-Start the MCP Gateway:
-
-```sh
-docker mcp gateway run --catalog=./catalog.yaml --servers=r-mcp --transport=sse --port=8811
-```
-
-Start the ADK web UI:
-
-```sh
-export MCPGATEWAY_ENDPOINT=http://127.0.0.1:8811
-export OPENAI_MODEL_NAME=gpt-4o-mini
-OPENAI_API_KEY=your-api-key adk web --reload_agents
-```
+Alternatively, start the project with one of the `docker compose` commands described previously and press `w` to start watching file changes.
 
 ## Under the hood
 
