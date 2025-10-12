@@ -8,7 +8,7 @@ from google.adk.agents import LlmAgent
 from google.genai.types import Part
 from mcp import types, StdioServerParameters
 from typing import Dict, Any, Optional
-from prompts import Root, Random, Plot, Code
+from prompts import Root, Random, Plot, Code, CSV
 import base64
 import os
 
@@ -57,12 +57,12 @@ random_agent = LlmAgent(
 async def save_plot_artifact(
     tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, tool_response: Dict
 ) -> Optional[Dict]:
-    if tool.name == "BasePlot":
+    if tool.name in ["BasePlot", "PlotCSV"]:
         # tool_response is a CallToolResult (type from mcp)
         # https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#parsing-tool-results
         for content in tool_response.content:
             if isinstance(content, types.TextContent):
-                # Convert BasePlot tool response (hex string) to bytes
+                # Convert tool response (hex string) to bytes
                 byte_data = bytes.fromhex(content.text)
                 # Encode binary data to Base64 format
                 encoded = base64.b64encode(byte_data).decode("utf-8")
@@ -73,13 +73,67 @@ async def save_plot_artifact(
                     }
                 )
                 # TODO: Use unique filename
-                filename = "BasePlot.png"
+                filename = f"{tool.name}.png"
                 await tool_context.save_artifact(
                     filename=filename, artifact=artifact_part
                 )
                 return f"Plot created and saved as artifact: {filename}"
 
     # Passthrough for other tools or no matching content
+    return None
+
+
+# Callback function to intercept CSV content before it reaches the LLM
+async def before_model_callback(callback_context, content):
+    """
+    Intercept content before it reaches the LLM to filter out binary content
+    that LiteLlm cannot handle, such as CSV file uploads.
+    """
+    from google.genai.types import Content, Part
+
+    # Create a new content with only text parts
+    filtered_parts = []
+
+    for part in content.parts:
+        # Only keep text parts, filter out inline_data (binary content)
+        if hasattr(part, "text") and part.text:
+            filtered_parts.append(Part(text=part.text))
+
+    # If we have text parts, return the filtered content
+    if filtered_parts:
+        return Content(role=content.role, parts=filtered_parts)
+
+    # If no text parts remain, return the original content
+    return content
+
+
+# Callback function to load CSV artifact and inject data into PlotCSV tool arguments
+async def load_csv_artifact(
+    tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext
+) -> Optional[Dict]:
+    if tool.name == "PlotCSV":
+        # Check if csv_filename is provided in arguments
+        csv_filename = args.get("csv_filename")
+        if csv_filename:
+            try:
+                # Load the CSV artifact
+                artifact = await tool_context.load_artifact(filename=csv_filename)
+                if artifact and artifact.inline_data:
+                    # Decode the CSV data from base64
+                    csv_data = artifact.inline_data.data
+                    # Remove csv_filename from args and add csv_data
+                    args_with_data = args.copy()
+                    del args_with_data["csv_filename"]
+                    args_with_data["csv_data"] = csv_data
+                    return args_with_data
+                else:
+                    return {
+                        "error": f"CSV file '{csv_filename}' not found in artifacts"
+                    }
+            except Exception as e:
+                return {"error": f"Failed to load CSV artifact '{csv_filename}': {e}"}
+
+    # Passthrough for other tools or no csv_filename provided
     return None
 
 
@@ -112,15 +166,33 @@ code_agent = LlmAgent(
     ],
 )
 
+# Create agent for plotting CSV data
+csv_agent = LlmAgent(
+    name="CSV",
+    description="Agent for plotting data from uploaded CSV files.",
+    model=model,
+    instruction=CSV,
+    tools=[
+        McpToolset(
+            connection_params=connection_params,
+            tool_filter=["PlotCSV"],
+        )
+    ],
+    before_model_callback=before_model_callback,
+    before_tool_callback=load_csv_artifact,
+    after_tool_callback=save_plot_artifact,
+)
+
 # Create parent agent and assign children via sub_agents
 root_agent = LlmAgent(
     name="Coordinator",
-    description="I route requests to agents for generating random numbers or plotting data using R functions.",
+    description="I route requests to agents for generating random numbers, plotting data, or plotting CSV files using R functions.",
     model=model,
     instruction=Root,
     sub_agents=[
         random_agent,
         plot_agent,
         code_agent,
+        csv_agent,
     ],
 )

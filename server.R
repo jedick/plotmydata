@@ -58,6 +58,32 @@ Continuous <- function(name, n, mean=0, sd=1, min=0, max=1, rate=1, df, ncp=0, n
   )
 }
 
+# Function to plot data from CSV string
+PlotCSV <- function(csv_data, x_column, y_column, type = "p") {
+  # Parse CSV data from string
+  df <- read.csv(text = csv_data)
+  
+  # Extract the specified columns
+  x_values <- df[[x_column]]
+  y_values <- df[[y_column]]
+  
+  # Check if columns exist
+  if (is.null(x_values)) {
+    stop(paste("Column", x_column, "not found in CSV"))
+  }
+  if (is.null(y_values)) {
+    stop(paste("Column", y_column, "not found in CSV"))
+  }
+  
+  # Create plot and return as raw PNG bytes (same as BasePlot)
+  filename <- tempfile(fileext = ".png")
+  on.exit(unlink(filename))
+  png(filename)
+  plot(x_values, y_values, type = type, xlab = x_column, ylab = y_column)
+  dev.off()
+  readr::read_file_raw(filename)
+}
+
 # Run any R code
 # https://github.com/posit-dev/mcptools/issues/71
 Run <- function(code) {
@@ -135,6 +161,17 @@ mcptools::mcp_server(tools = list(
     "Run R Code",
     arguments = list(
       code = type_string("R code to run, formatted as plain text.")
+    )
+  ),
+
+  tool(
+    PlotCSV,
+    "Plot data from CSV string",
+    arguments = list(
+      csv_data = type_string("CSV file contents as a string."),
+      x_column = type_string("Name of the column to plot on x-axis."),
+      y_column = type_string("Name of the column to plot on y-axis."),
+      type = type_string("Type of plot: 'p' for points, 'l' for lines, 'b' for both.", required = FALSE)
     )
   )
 

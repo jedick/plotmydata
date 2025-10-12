@@ -6,18 +6,10 @@ To help R users solve real-world problems, AI agents need access to tools and gu
 The aim of this project is to build an intuitive conversational interface to powerful plotting function.
 To do this, we are engineering an ecosystem of AI agents and tools that can make plots, generate random numbers, and run R code.
 
-A data-first approach to AI development using known-good traces as evaluation baselines ensures that the system works as expected.
+A test-driven approach to AI development using known-good traces as evaluation baselines ensures that the system works as expected.
 It's made with industry-standard components, supporting different models and scalable deployment options.
 
 ![AI agent uses R `rbinom` function in response to "Simulate 100 coin tosses and count the number of heads."](https://chnosz.net/guest/plotmydata/rbinom.png)
-
-## Overview
-
-We use [Docker Compose] to connect an [Agent Development Kit] client to an MCP server from the [mcptools] package running in an [R environment].
-
-- Model Context Protocol (MCP) allows AI agents to interact with external tools in a client-server setup.
-- Docker Compose supports definitions of containerized AI agents and one or more MCP servers (through Docker MCP Gateway) for scalable and secure deployment.
-- R offers many statistical functions that can be exposed through an MCP server with the mcptools package.
 
 ## Running the project
 
@@ -88,6 +80,10 @@ The local LLM is [Gemma 3]; this can be changed in `model-runner.yaml`.
 
 ## Under the hood
 
+Model Context Protocol (MCP) allows AI agents to interact with external tools in a client-server setup.
+We use Docker MCP Gateway to connect an [Agent Development Kit] client to an MCP server from the [mcptools] package running in an [R environment].
+[Docker Compose] supports definitions of containerized AI agents and one or more MCP servers for scalable and secure deployment.
+
 - The `plotmydata-tools` image is based on [rocker/v-ver]
   - `server.R` defines **18 tools** to generate random numbers from various probability distributions
 - The `plotmydata-agent` image is based on [Docker Python slim]
@@ -114,7 +110,6 @@ In these examples, the user describes the problem and the agent chooses a distri
 ![AI agent uses R `rhyper` function in response to "Draw 10 balls from a box of 20 total balls (5 red, 15 blue). Do this twice and list the number of red balls drawn in each trial."](https://chnosz.net/guest/plotmydata/rhyper.png)
 
 ## Tool reference
-
 
 The following distributions are available for generating random numbers.
 See the [R help page on Distributions] for more information.
