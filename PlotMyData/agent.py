@@ -8,7 +8,7 @@ from google.adk.agents import LlmAgent
 from google.genai.types import Part
 from typing import Dict, Any, Optional
 from mcp import types, StdioServerParameters
-from prompts import Root, Random, Plot, Code, CSV
+from prompts import Root, Random, Code, CSV
 import base64
 import os
 
@@ -53,11 +53,11 @@ random_agent = LlmAgent(
 )
 
 
-# Callback function to save PNG returned from BasePlot() as an ADK artifact
+# Callback function to save PNG returned from Plot() as an ADK artifact
 async def save_plot_artifact(
     tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, tool_response: Dict
 ) -> Optional[Dict]:
-    if tool.name in ["BasePlot", "PlotCSV"]:
+    if tool.name in ["Plot", "PlotCSV"]:
         # tool_response is a CallToolResult (type from mcp)
         # https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#parsing-tool-results
         for content in tool_response.content:
@@ -83,33 +83,19 @@ async def save_plot_artifact(
     return None
 
 
-# Create agent for making scatterplots
-plot_agent = LlmAgent(
-    name="Plot",
-    description="Agent for making scatterplots using R.",
-    model=model,
-    instruction=Plot,
-    tools=[
-        McpToolset(
-            connection_params=connection_params,
-            tool_filter=["BasePlot"],
-        )
-    ],
-    after_tool_callback=save_plot_artifact,
-)
-
 # Create agent to run R code
 code_agent = LlmAgent(
     name="Code",
-    description="Agent for running R code.",
+    description="Agent for running R code and making plots.",
     model=model,
     instruction=Code,
     tools=[
         McpToolset(
             connection_params=connection_params,
-            tool_filter=["Run"],
+            tool_filter=["Run", "Plot"],
         )
     ],
+    after_tool_callback=save_plot_artifact,
 )
 
 # Create agent for plotting CSV data
@@ -135,7 +121,6 @@ root_agent = LlmAgent(
     instruction=Root,
     sub_agents=[
         random_agent,
-        plot_agent,
         code_agent,
         csv_agent,
     ],

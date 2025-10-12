@@ -5,8 +5,8 @@
 # Load ellmer for tool() and type_*()
 library(ellmer)
 
-# Custom plot function with explicit arguments
-BasePlot <- function(x, y, type = "p") {
+# Run any plotting code and return the image data
+Plot <- function(code) {
   # Cursor, Bing and Google AI all suggest this but it causes an error:
   # Error in png(filename = raw_conn) : 
   #   'filename' must be a non-empty character string
@@ -14,13 +14,14 @@ BasePlot <- function(x, y, type = "p") {
   #raw_conn <- rawConnection(raw(), open = "wb")
   #png(filename = raw_conn)
 
-  # Write PNG to a temporary file
-  # Modified from https://hypatia.math.ethz.ch/pipermail/r-help/2023-May/477468.html
-  filename <- tempfile(fileext = ".png")
+  # Use a temporary file to save the plot
+  filename <- tempfile(fileext = ".dat")
   on.exit(unlink(filename))
-  png(filename)
-  plot(x, y, type = type)
-  dev.off()
+
+  # Run the plotting code (this should include e.g. png() and dev.off())
+  # The code uses a local variable (filename), so don't use envir = globalenv() here
+  eval(parse(text = code))
+
   # Return a PNG image as raw bytes so ADK can save it as an artifact
   readr::read_file_raw(filename)
 }
@@ -75,7 +76,7 @@ PlotCSV <- function(csv_url, x_column, y_column, type = "p") {
     stop(paste("Column", y_column, "not found in CSV"))
   }
   
-  # Create plot and return as raw PNG bytes (same as BasePlot)
+  # Create plot and return as raw PNG bytes (same as Plot)
   filename <- tempfile(fileext = ".png")
   on.exit(unlink(filename))
   png(filename)
@@ -147,20 +148,18 @@ mcptools::mcp_server(tools = list(
   ),
 
   tool(
-    BasePlot,
-    "Make a plot",
+    Run,
+    "Run R code",
     arguments = list(
-      x = type_array(type_number("Vector of x values.")),
-      y = type_array(type_number("Vector of y values.")),
-      type = type_string("Type of plot: 'p' for points, 'l' for lines, 'b' for both.", required = FALSE)
+      code = type_string("R code to run.")
     )
   ),
 
   tool(
-    Run,
-    "Run R Code",
+    Plot,
+    "Run R code for plotting",
     arguments = list(
-      code = type_string("R code to run, formatted as plain text.")
+      code = type_string("R code to make the plot.")
     )
   ),
 

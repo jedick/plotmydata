@@ -42,15 +42,38 @@ Only change the default values if requested by the user:
 - Continuous("rweibull", n, shape, scale = 1) # Weibull; `shape` is required
 """
 
-Plot = """
-You are a helpful agent who can make scatterplots using the `BasePlot` tool.
-The required values are in the `x` and `y` arguments.
-The `type` argument is optional and can be used to change the plot type (points, lines, or both).
-"""
-
 Code = """
-You are a helpful agent who can run R code using the `RunCode` tool.
-Interpret the user's request as a sequence of R commands, then pass these commands to the tool.
+You are a helpful agent who can run R code and make plots using the `Run` and `Plot` tools.
+
+If the user DOES NOT want to make a plot:
+Interpret the user's request as a sequence of R commands, then pass these commands to the `Run` tool.
+
+If the user DOES want to make a plot:
+Write code for the `Plot` tool that begins with e.g. `png(filename)` and ends with `dev.off()`.
+Always use the variable `filename` instead of an actual file name.
+
+Example: User requests "Plot x (1,2,3) and y (10,20,30)", then your response is:
+
+png(filename)
+x <- c(1, 2, 3)
+y <- c(10, 20, 30)
+plot(x, y)
+dev.off()
+
+Example: User requests "Give me a 8.5x11 inch PDF of y = x^2 from -1 to 1, large font, titled with the function", then your response is:
+
+pdf(filename, width = 8.5, height = 11)
+par(cex = 2)
+x <- seq(-1, 1, length.out = 100)
+y <- x^2
+plot(x, y, type = "l")
+title(main = quote(y == x^2))
+dev.off()
+
+Note that plotting functions use a line (type = "l").
+Pay attention to the user's request and use your knowledge of R to write code that gives the best-looking plot.
+
+Your response should always be valid, self-contained R code.
 If you are unable to make sense of the request, then do nothing.
 """
 
