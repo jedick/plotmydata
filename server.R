@@ -58,10 +58,10 @@ Continuous <- function(name, n, mean=0, sd=1, min=0, max=1, rate=1, df, ncp=0, n
   )
 }
 
-# Function to plot data from CSV string
-PlotCSV <- function(csv_data, x_column, y_column, type = "p") {
+# Function to plot data from CSV available at a given URL
+PlotCSV <- function(csv_url, x_column, y_column, type = "p") {
   # Parse CSV data from string
-  df <- read.csv(text = csv_data)
+  df <- read.csv(csv_url)
   
   # Extract the specified columns
   x_values <- df[[x_column]]
@@ -166,9 +166,9 @@ mcptools::mcp_server(tools = list(
 
   tool(
     PlotCSV,
-    "Plot data from CSV string",
+    "Plot data from CSV URL",
     arguments = list(
-      csv_data = type_string("CSV file contents as a string."),
+      csv_url = type_string("URL for CSV file."),
       x_column = type_string("Name of the column to plot on x-axis."),
       y_column = type_string("Name of the column to plot on y-axis."),
       type = type_string("Type of plot: 'p' for points, 'l' for lines, 'b' for both.", required = FALSE)

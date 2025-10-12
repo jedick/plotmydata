@@ -6,8 +6,8 @@ from google.adk.tools.base_tool import BaseTool
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.agents import LlmAgent
 from google.genai.types import Part
-from mcp import types, StdioServerParameters
 from typing import Dict, Any, Optional
+from mcp import types, StdioServerParameters
 from prompts import Root, Random, Plot, Code, CSV
 import base64
 import os
@@ -83,60 +83,6 @@ async def save_plot_artifact(
     return None
 
 
-# Callback function to intercept CSV content before it reaches the LLM
-async def before_model_callback(callback_context, content):
-    """
-    Intercept content before it reaches the LLM to filter out binary content
-    that LiteLlm cannot handle, such as CSV file uploads.
-    """
-    from google.genai.types import Content, Part
-
-    # Create a new content with only text parts
-    filtered_parts = []
-
-    for part in content.parts:
-        # Only keep text parts, filter out inline_data (binary content)
-        if hasattr(part, "text") and part.text:
-            filtered_parts.append(Part(text=part.text))
-
-    # If we have text parts, return the filtered content
-    if filtered_parts:
-        return Content(role=content.role, parts=filtered_parts)
-
-    # If no text parts remain, return the original content
-    return content
-
-
-# Callback function to load CSV artifact and inject data into PlotCSV tool arguments
-async def load_csv_artifact(
-    tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext
-) -> Optional[Dict]:
-    if tool.name == "PlotCSV":
-        # Check if csv_filename is provided in arguments
-        csv_filename = args.get("csv_filename")
-        if csv_filename:
-            try:
-                # Load the CSV artifact
-                artifact = await tool_context.load_artifact(filename=csv_filename)
-                if artifact and artifact.inline_data:
-                    # Decode the CSV data from base64
-                    csv_data = artifact.inline_data.data
-                    # Remove csv_filename from args and add csv_data
-                    args_with_data = args.copy()
-                    del args_with_data["csv_filename"]
-                    args_with_data["csv_data"] = csv_data
-                    return args_with_data
-                else:
-                    return {
-                        "error": f"CSV file '{csv_filename}' not found in artifacts"
-                    }
-            except Exception as e:
-                return {"error": f"Failed to load CSV artifact '{csv_filename}': {e}"}
-
-    # Passthrough for other tools or no csv_filename provided
-    return None
-
-
 # Create agent for making scatterplots
 plot_agent = LlmAgent(
     name="Plot",
@@ -169,7 +115,7 @@ code_agent = LlmAgent(
 # Create agent for plotting CSV data
 csv_agent = LlmAgent(
     name="CSV",
-    description="Agent for plotting data from uploaded CSV files.",
+    description="Agent for plotting data from CSV files located at a URL.",
     model=model,
     instruction=CSV,
     tools=[
@@ -178,8 +124,6 @@ csv_agent = LlmAgent(
             tool_filter=["PlotCSV"],
         )
     ],
-    before_model_callback=before_model_callback,
-    before_tool_callback=load_csv_artifact,
     after_tool_callback=save_plot_artifact,
 )
 
