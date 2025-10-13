@@ -6,7 +6,7 @@ from google.adk.tools.base_tool import BaseTool
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.agents import LlmAgent
 from google.genai.types import Part
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 from mcp import types, StdioServerParameters
 from prompts import Root, Random, Code, CSV
 import base64
@@ -53,10 +53,37 @@ random_agent = LlmAgent(
 )
 
 
-# Callback function to save PNG returned from Plot() as an ADK artifact
+def detect_file_type(byte_data: bytes) -> Tuple[str, str]:
+    """
+    Detect file type from magic number/bytes and return (mime_type, file_extension).
+    Supports BMP, JPEG, PNG, TIFF, and PDF.
+    """
+    if len(byte_data) < 8:
+        # Default to PNG if we can't determine
+        return "image/png", "png"
+
+    # Check magic numbers
+    if byte_data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png", "png"
+    elif byte_data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg", "jpg"
+    elif byte_data.startswith(b"BM"):
+        return "image/bmp", "bmp"
+    elif byte_data.startswith(b"II*\x00") or byte_data.startswith(b"MM\x00*"):
+        return "image/tiff", "tiff"
+    elif byte_data.startswith(b"%PDF"):
+        return "application/pdf", "pdf"
+    else:
+        # Default to PNG if we can't determine
+        return "image/png", "png"
+
+
 async def save_plot_artifact(
     tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, tool_response: Dict
 ) -> Optional[Dict]:
+    """
+    Callback function to save plot files returned from Plot() as an ADK artifact.
+    """
     if tool.name in ["Plot", "PlotCSV"]:
         # tool_response is a CallToolResult (type from mcp)
         # https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#parsing-tool-results
@@ -64,16 +91,20 @@ async def save_plot_artifact(
             if isinstance(content, types.TextContent):
                 # Convert tool response (hex string) to bytes
                 byte_data = bytes.fromhex(content.text)
+
+                # Detect file type from magic number
+                mime_type, file_extension = detect_file_type(byte_data)
+
                 # Encode binary data to Base64 format
                 encoded = base64.b64encode(byte_data).decode("utf-8")
                 artifact_part = Part(
                     inline_data={
                         "data": encoded,
-                        "mime_type": "image/png",
+                        "mime_type": mime_type,
                     }
                 )
                 # TODO: Use unique filename
-                filename = f"{tool.name}.png"
+                filename = f"{tool.name}.{file_extension}"
                 await tool_context.save_artifact(
                     filename=filename, artifact=artifact_part
                 )

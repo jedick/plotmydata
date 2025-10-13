@@ -3,7 +3,7 @@
 The R software environment is an open-source platform for statistics, data analysis and visualization.
 To help R users solve real-world problems, AI agents need access to tools and guidance about their usage.
 
-The aim of this project is to build an intuitive conversational interface to powerful plotting function.
+The aim of this project is to build an intuitive conversational interface to powerful plotting functions.
 To do this, we are engineering an ecosystem of AI agents and tools that can make plots, generate random numbers, and run R code.
 
 A test-driven approach to AI development using known-good traces as evaluation baselines ensures that the system works as expected.
