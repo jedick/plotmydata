@@ -9,7 +9,7 @@ To do this, we are engineering an ecosystem of AI agents and tools that can make
 A test-driven approach to AI development using known-good traces as evaluation baselines ensures that the system works as expected.
 It's made with industry-standard components, supporting different models and scalable deployment options.
 
-![AI agent uses R `rbinom` function in response to "Simulate 100 coin tosses and count the number of heads."](https://chnosz.net/guest/plotmydata/rbinom.png)
+<img width="50%" alt="Chat with AI agent to plot Sierpiński Triangle" src="https://chnosz.net/guest/plotmydata/sierpinski-triangle.png" />
 
 ## Running the project
 
@@ -78,6 +78,38 @@ docker compose -f compose.yaml -f model-runner.yaml up
 
 The local LLM is [Gemma 3]; this can be changed in `model-runner.yaml`.
 
+## Examples
+
+Click the example prompts below to toggle visibility of the output.
+
+### Plotting
+
+<details open>
+<summary><i>Plot radius_worst (y) vs radius_mean (x) from https://zenodo.org/records/3608984/files/breastcancer.csv?download=1. Add a blue 1:1 line and title "Breast Cancer Wisconsin (Diagnostic)".</i></summary>
+
+![Chat with AI agent to plot breast cancer data from a CSV file at a given URL"](https://chnosz.net/guest/plotmydata/breast-cancer.png)
+
+- Note: the original source of this dataset is <https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic>. The Zenodo URL is used to download a CSV version.
+</details>
+
+### Random numbers
+
+<details>
+<summary><i>Draw 5 random numbers between 0 and 100. Choose the distribution that is appropriate for this problem.</i></summary>
+
+![Chat with AI agent to use the R `runif` function"](https://chnosz.net/guest/plotmydata/runif.png)
+
+- Agent chooses the uniform distribution
+</details>
+
+<details>
+<summary><i>Draw 10 balls from a box of 20 total balls (5 red, 15 blue). Do this twice and list the number of red balls drawn in each trial.</i></summary>
+
+![Chat with AI agent to use the R `rhyper` function](https://chnosz.net/guest/plotmydata/rhyper.png)
+
+- Agent chooses the hypergeometric distribution
+</details>
+
 ## Under the hood
 
 Model Context Protocol (MCP) allows AI agents to interact with external tools in a client-server setup.
@@ -96,18 +128,6 @@ We use Docker MCP Gateway to connect an [Agent Development Kit] client to an MCP
   - `action: rebuild` is used for `server.R` because we need to restart the MCP server if the R code changes
   - `action: sync` is used for `PlotMyData` because the ADK web server supports hot reloading with the
     [`--reload_agents`](https://github.com/google/adk-python/commit/e545e5a570c1331d2ed8fda31c7244b5e0f71584) flag
-  
-## Examples
-
-In these examples, the user describes the problem and the agent chooses a distribution and calls the correct tool.
-
-- Uniform distribution
-
-![AI agent uses R `runif` function in response to "Draw 5 random numbers between 0 and 100. Choose the distribution that is appropriate for this problem."](https://chnosz.net/guest/plotmydata/runif.png)
-
-- Hypergeometric distribution
-
-![AI agent uses R `rhyper` function in response to "Draw 10 balls from a box of 20 total balls (5 red, 15 blue). Do this twice and list the number of red balls drawn in each trial."](https://chnosz.net/guest/plotmydata/rhyper.png)
 
 ## Tool reference
 

@@ -8,7 +8,7 @@ from google.adk.agents import LlmAgent
 from google.genai.types import Part
 from typing import Dict, Any, Optional, Tuple
 from mcp import types, StdioServerParameters
-from prompts import Root, Random, Code, CSV
+from prompts import Root, Random, Code
 import base64
 import os
 
@@ -84,7 +84,7 @@ async def save_plot_artifact(
     """
     Callback function to save plot files returned from Plot() as an ADK artifact.
     """
-    if tool.name in ["Plot", "PlotCSV"]:
+    if tool.name in ["Plot"]:
         # tool_response is a CallToolResult (type from mcp)
         # https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#parsing-tool-results
         for content in tool_response.content:
@@ -129,21 +129,6 @@ code_agent = LlmAgent(
     after_tool_callback=save_plot_artifact,
 )
 
-# Create agent for plotting CSV data
-csv_agent = LlmAgent(
-    name="CSV",
-    description="Agent for plotting data from CSV files located at a URL.",
-    model=model,
-    instruction=CSV,
-    tools=[
-        McpToolset(
-            connection_params=connection_params,
-            tool_filter=["PlotCSV"],
-        )
-    ],
-    after_tool_callback=save_plot_artifact,
-)
-
 # Create parent agent and assign children via sub_agents
 root_agent = LlmAgent(
     name="Coordinator",
@@ -153,6 +138,5 @@ root_agent = LlmAgent(
     sub_agents=[
         random_agent,
         code_agent,
-        csv_agent,
     ],
 )
