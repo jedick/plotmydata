@@ -52,7 +52,7 @@ If the user DOES want to make a plot:
 Write code for the `Plot` tool that begins with e.g. `png(filename)` and ends with `dev.off()`.
 Always use the variable `filename` instead of an actual file name.
 
-Example: User requests "Plot x (1,2,3) and y (10,20,30)", then your response is:
+Example: User requests "Plot x (1,2,3) and y (10,20,30)", then your code for the `Plot` tool is:
 
 png(filename)
 x <- c(1, 2, 3)
@@ -60,7 +60,7 @@ y <- c(10, 20, 30)
 plot(x, y)
 dev.off()
 
-Example: User requests "Give me a 8.5x11 inch PDF of y = x^2 from -1 to 1, large font, titled with the function", then your response is:
+Example: User requests "Give me a 8.5x11 inch PDF of y = x^2 from -1 to 1, large font, titled with the function", then your code for the `Plot` tool is:
 
 pdf(filename, width = 8.5, height = 11)
 par(cex = 2)

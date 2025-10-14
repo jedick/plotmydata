@@ -1,0 +1,322 @@
+{
+  "eval_set_id": "20251014",
+  "name": "20251014",
+  "eval_cases": [
+    {
+      "eval_id": "Run 2^8",
+      "conversation": [
+        {
+          "invocation_id": "e-7d51f298-499e-4c45-8e49-217e5606974f",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Run 2^8"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "The result of \\(2^8\\) is 256."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "invocation_events": [
+              {
+                "author": "Coordinator",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_eFmBxdKsGYvN78ZjucG4XNLJ",
+                        "args": {
+                          "agent_name": "Code"
+                        },
+                        "name": "transfer_to_agent"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "Coordinator",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_eFmBxdKsGYvN78ZjucG4XNLJ",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "Code",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_r9cTMONJ1NrRE2ojKEZzLG45",
+                        "args": {
+                          "code": "2^8"
+                        },
+                        "name": "Run"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "Code",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_r9cTMONJ1NrRE2ojKEZzLG45",
+                        "name": "Run",
+                        "response": {
+                          "result": {
+                            "content": [
+                              {
+                                "type": "text",
+                                "text": "256"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              }
+            ]
+          },
+          "creation_timestamp": 1760408109.704135
+        }
+      ],
+      "session_input": {
+        "app_name": "PlotMyData",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1760408135.2343688
+    },
+    {
+      "eval_id": "Plot x=0 to 10 by 1, y = 0 to 100 by 10",
+      "conversation": [
+        {
+          "invocation_id": "e-d149da45-061e-482c-aef9-ebfdfda56915",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Plot x=0 to 10 by 1, y = 0 to 100 by 10"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "The plot has been created and saved as \"Plot.png\"."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "invocation_events": [
+              {
+                "author": "Coordinator",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_sSAVHMw1Sblc0C4sn8vkoBXL",
+                        "args": {
+                          "agent_name": "Code"
+                        },
+                        "name": "transfer_to_agent"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "Coordinator",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_sSAVHMw1Sblc0C4sn8vkoBXL",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "Code",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_j5aMn0guioskKWLbVO2D4gsM",
+                        "args": {
+                          "code": "png(filename)\nx <- seq(0, 10, by = 1)\ny <- seq(0, 100, by = 10)\nplot(x, y)\ndev.off()"
+                        },
+                        "name": "Plot"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "Code",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_j5aMn0guioskKWLbVO2D4gsM",
+                        "name": "Plot",
+                        "response": {
+                          "result": "Plot created and saved as artifact: Plot.png"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              }
+            ]
+          },
+          "creation_timestamp": 1760408405.4071
+        }
+      ],
+      "session_input": {
+        "app_name": "PlotMyData",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1760408433.0091941
+    },
+    {
+      "eval_id": "Plot CSV radius_worst (y) vs radius_mean (x)",
+      "conversation": [
+        {
+          "invocation_id": "e-1628429c-3d09-475a-b015-bf17375fc22e",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Plot CSV radius_worst (y) vs radius_mean (x) from https://zenodo.org/records/3608984/files/breastcancer.csv?download=1"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "The plot of `radius_worst` (y) vs `radius_mean` (x) has been created successfully and saved as \"PlotCSV.png\". If you need further assistance or additional plots, feel free to ask!"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "invocation_events": [
+              {
+                "author": "Coordinator",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_6jHwahmDnnY0L1AhyNVD3HZM",
+                        "args": {
+                          "agent_name": "CSV"
+                        },
+                        "name": "transfer_to_agent"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "Coordinator",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_6jHwahmDnnY0L1AhyNVD3HZM",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "CSV",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_dIqcI9GsJYn1HgzIqfOjPCwf",
+                        "args": {
+                          "csv_url": "https://zenodo.org/records/3608984/files/breastcancer.csv?download=1",
+                          "x_column": "radius_mean",
+                          "y_column": "radius_worst"
+                        },
+                        "name": "PlotCSV"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "CSV",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_dIqcI9GsJYn1HgzIqfOjPCwf",
+                        "name": "PlotCSV",
+                        "response": {
+                          "result": "Plot created and saved as artifact: PlotCSV.png"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              }
+            ]
+          },
+          "creation_timestamp": 1760409112.761706
+        }
+      ],
+      "session_input": {
+        "app_name": "PlotMyData",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1760409153.1655688
+    }
+  ],
+  "creation_timestamp": 1760408121.933711
+}
