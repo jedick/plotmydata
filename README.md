@@ -103,8 +103,8 @@ The local LLM is [Gemma 3]; this can be changed in `model-runner.yaml`.
 
 Click the example prompts below to toggle visibility of the output.
 
-<details open>
-<summary><strong>Plotting:</strong> <i>Plot radius_worst (y) vs radius_mean (x) from https://zenodo.org/records/3608984/files/breastcancer.csv?download=1. Add a blue 1:1 line and title "Breast Cancer Wisconsin (Diagnostic)".</i></summary>
+<details>
+<summary><strong>Plotting data:</strong> <i>Plot radius_worst (y) vs radius_mean (x) from https://zenodo.org/records/3608984/files/breastcancer.csv?download=1. Add a blue 1:1 line and title "Breast Cancer Wisconsin (Diagnostic)".</i></summary>
 
 ![Chat with AI agent to plot breast cancer data from a CSV file at a given URL"](https://chnosz.net/guest/plotmydata/breast-cancer.png)
 
