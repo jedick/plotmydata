@@ -8,7 +8,7 @@ from google.adk.agents import LlmAgent
 from google.genai.types import Part
 from typing import Dict, Any, Optional, Tuple
 from mcp import types, StdioServerParameters
-from prompts import Root, Random, Code
+from prompts import Root, Session, Code
 import base64
 import os
 
@@ -34,22 +34,6 @@ except:
 model = LiteLlm(
     model=os.environ.get("OPENAI_MODEL_NAME", ""),
     api_key=os.environ.get("OPENAI_API_KEY", "fake-API-key"),
-)
-
-# Create agent for generating random numbers
-random_agent = LlmAgent(
-    name="Random",
-    description="Agent for generating random numbers using R functions.",
-    model=model,
-    instruction=Random,
-    tools=[
-        # Define the toolset with MCP connection parameters
-        McpToolset(
-            connection_params=connection_params,
-            # List tools for random numbers
-            tool_filter=["Discrete", "Continuous"],
-        )
-    ],
 )
 
 
@@ -129,14 +113,28 @@ code_agent = LlmAgent(
     after_tool_callback=save_plot_artifact,
 )
 
+# Create agent to handle R sessions
+session_agent = LlmAgent(
+    name="Session",
+    description="Agent for listing and selecting R sessions.",
+    model=model,
+    instruction=Session,
+    tools=[
+        McpToolset(
+            connection_params=connection_params,
+            tool_filter=["list_r_sessions", "select_r_session"],
+        )
+    ],
+)
+
 # Create parent agent and assign children via sub_agents
 root_agent = LlmAgent(
     name="Coordinator",
-    description="I route requests to agents for generating random numbers, plotting data, or plotting CSV files using R functions.",
+    description="I route requests to agents for managing R sessions or running R functions (including plotting).",
     model=model,
     instruction=Root,
     sub_agents=[
-        random_agent,
+        session_agent,
         code_agent,
     ],
 )
