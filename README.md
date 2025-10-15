@@ -1,15 +1,18 @@
-# Plot My Data - using R with AI Agents
+# Plot My Data - using R with AI agents
 
-The R software environment is an open-source platform for statistics, data analysis and visualization.
+The [R software environment] is an open-source platform for statistics, data analysis and visualization.
 To help R users solve real-world problems, AI agents need access to tools and guidance about their usage.
 
 The aim of this project is to build an intuitive conversational interface to powerful plotting functions.
 To do this, we are engineering an ecosystem of AI agents and tools that can run R code and make plots.
 
-A test-driven approach to AI development using known-good traces as evaluation baselines ensures that the system works as expected.
+A test-driven approach to AI development using known-good traces as evaluation cases ensures that the system works as expected.
 It's made with industry-standard components, supporting different models and scalable deployment options.
 
-<img width="50%" alt="Chat with AI agent to plot Sierpiński Triangle" src="https://chnosz.net/guest/plotmydata/sierpinski-triangle.png" />
+![Animation of a chat with an AI agent to plot histograms of sums of squares of normal random numbers](https://chnosz.net/guest/plotmydata/test-animated.gif)
+
+Note: In this example, the agent uses the `Hide` tool to modify R variables without returning the results.
+This way the LLM isn't flooded with thousands of tokens representing random numbers.
 
 ## Features
 
@@ -109,6 +112,14 @@ Note: This dataset is from the [UCI Machine Learning Repository]. The Zenodo URL
 </details>
 
 <details>
+<summary><strong>Plotting functions:</strong> <i>Plot a Sierpiński Triangle</i></summary>
+
+<img width="50%" alt="Chat with AI agent to plot Sierpiński Triangle" src="https://chnosz.net/guest/plotmydata/sierpinski-triangle.png" />
+
+Note: This dataset is from the [UCI Machine Learning Repository]. The Zenodo URL is used to download a CSV version.
+</details>
+
+<details>
 <summary><strong>Persist variables:</strong> <i>Use a session</i></summary>
 
 The full prompt history:
@@ -123,7 +134,7 @@ The full prompt history:
 ## Under the hood
 
 Model Context Protocol (MCP) allows AI agents to interact with external tools in a client-server setup.
-We use Docker MCP Gateway to connect an [Agent Development Kit] client to an MCP server from the [mcptools] package running in an [R environment].
+We use Docker MCP Gateway to connect an [Agent Development Kit] client to an MCP server from the [mcptools] R package.
 [Docker Compose] supports definitions of containerized AI agents and one or more MCP servers for scalable and secure deployment.
 
 - The `plotmydata-tools` image is based on [rocker/v-ver]
@@ -139,9 +150,9 @@ We use Docker MCP Gateway to connect an [Agent Development Kit] client to an MCP
   - `action: sync` is used for `PlotMyData` because the ADK web server supports hot reloading with the
     [`--reload_agents`](https://github.com/google/adk-python/commit/e545e5a570c1331d2ed8fda31c7244b5e0f71584) flag
 
+[R software environment]: https://www.r-project.org/
 [Docker Compose]: https://docs.docker.com/compose/
 [Agent Development Kit]: https://google.github.io/adk-docs/
-[R environment]: https://www.r-project.org/
 [mcptools]: https://github.com/posit-dev/mcptools
 [Docker MCP Gateway]: https://docs.docker.com/ai/mcp-gateway/
 [Docker Model Runner]: https://docs.docker.com/ai/model-runner/

@@ -107,7 +107,7 @@ code_agent = LlmAgent(
     tools=[
         McpToolset(
             connection_params=connection_params,
-            tool_filter=["Run", "Plot"],
+            tool_filter=["Run", "Hide", "Plot"],
         )
     ],
     after_tool_callback=save_plot_artifact,

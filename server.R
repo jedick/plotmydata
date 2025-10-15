@@ -30,11 +30,26 @@ Run <- function(code) {
   eval(parse(text = code), globalenv())
 }
 
+# Run R code to save a variable without returning the result
+# https://github.com/posit-dev/mcptools/issues/71
+Hide <- function(code) {
+  eval(parse(text = code), globalenv())
+  return("The operation completed successfully")
+}
+
 mcptools::mcp_server(tools = list(
 
   tool(
     Run,
     "Run R code",
+    arguments = list(
+      code = type_string("R code to run.")
+    )
+  ),
+
+  tool(
+    Hide,
+    "Run R code without returning the result",
     arguments = list(
       code = type_string("R code to run.")
     )
