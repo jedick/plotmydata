@@ -3,8 +3,11 @@
 # Load ellmer for tool() and type_*()
 library(ellmer)
 
-# Run any plotting code and return the image data
-Plot <- function(code) {
+# Read prompts
+source("prompts.R")
+
+# Run R code to make a plot and return the image data
+make_plot <- function(code) {
   # Cursor, Bing and Google AI all suggest this but it causes an error:
   # Error in png(filename = raw_conn) : 
   #   'filename' must be a non-empty character string
@@ -24,15 +27,23 @@ Plot <- function(code) {
   readr::read_file_raw(filename)
 }
 
-# Run any R code
+# This is the same code as make_plot() but has a different tool description
+make_ggplot <- function(code) {
+  filename <- tempfile(fileext = ".dat")
+  on.exit(unlink(filename))
+  eval(parse(text = code))
+  readr::read_file_raw(filename)
+}
+
+# Run R code and return the result
 # https://github.com/posit-dev/mcptools/issues/71
-Run <- function(code) {
+run_visible <- function(code) {
   eval(parse(text = code), globalenv())
 }
 
-# Run R code to save a variable without returning the result
+# Run R code without returning the result
 # https://github.com/posit-dev/mcptools/issues/71
-Hide <- function(code) {
+run_hidden <- function(code) {
   eval(parse(text = code), globalenv())
   return("The operation completed successfully")
 }
@@ -40,7 +51,7 @@ Hide <- function(code) {
 mcptools::mcp_server(tools = list(
 
   tool(
-    Run,
+    run_visible,
     "Run R code",
     arguments = list(
       code = type_string("R code to run.")
@@ -48,7 +59,7 @@ mcptools::mcp_server(tools = list(
   ),
 
   tool(
-    Hide,
+    run_hidden,
     "Run R code without returning the result",
     arguments = list(
       code = type_string("R code to run.")
@@ -56,8 +67,16 @@ mcptools::mcp_server(tools = list(
   ),
 
   tool(
-    Plot,
-    "Run R code for plotting",
+    make_plot,
+    make_plot_prompt,
+    arguments = list(
+      code = type_string("R code to make the plot.")
+    )
+  ),
+
+  tool(
+    make_ggplot,
+    make_ggplot_prompt,
     arguments = list(
       code = type_string("R code to make the plot.")
     )

@@ -8,7 +8,7 @@ from google.adk.agents import LlmAgent
 from google.genai.types import Part
 from typing import Dict, Any, Optional, Tuple
 from mcp import types, StdioServerParameters
-from prompts import Root, Session, Code
+from prompts import Root, Session, Run, Plot
 import base64
 import os
 
@@ -66,9 +66,9 @@ async def save_plot_artifact(
     tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, tool_response: Dict
 ) -> Optional[Dict]:
     """
-    Callback function to save plot files returned from Plot() as an ADK artifact.
+    Callback function to save plot files as an ADK artifact.
     """
-    if tool.name in ["Plot"]:
+    if tool.name in ["make_plot", "make_ggplot"]:
         # tool_response is a CallToolResult (type from mcp)
         # https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#parsing-tool-results
         for content in tool_response.content:
@@ -87,8 +87,8 @@ async def save_plot_artifact(
                         "mime_type": mime_type,
                     }
                 )
-                # TODO: Use unique filename
-                filename = f"{tool.name}.{file_extension}"
+                # Use second part of tool name (e.g. make_ggplot -> ggplot.png)
+                filename = f"{tool.name.split("_", 1)[1]}.{file_extension}"
                 await tool_context.save_artifact(
                     filename=filename, artifact=artifact_part
                 )
@@ -97,21 +97,6 @@ async def save_plot_artifact(
     # Passthrough for other tools or no matching content
     return None
 
-
-# Create agent to run R code
-code_agent = LlmAgent(
-    name="Code",
-    description="Agent for running R code and making plots.",
-    model=model,
-    instruction=Code,
-    tools=[
-        McpToolset(
-            connection_params=connection_params,
-            tool_filter=["Run", "Hide", "Plot"],
-        )
-    ],
-    after_tool_callback=save_plot_artifact,
-)
 
 # Create agent to handle R sessions
 session_agent = LlmAgent(
@@ -127,14 +112,45 @@ session_agent = LlmAgent(
     ],
 )
 
+# Create agent to run R code
+run_agent = LlmAgent(
+    name="Run",
+    description="Agent for running R code without making plots.",
+    model=model,
+    instruction=Run,
+    tools=[
+        McpToolset(
+            connection_params=connection_params,
+            tool_filter=["run_visible", "run_hidden"],
+        )
+    ],
+    after_tool_callback=save_plot_artifact,
+)
+
+# Create agent to run R code to make plots
+plot_agent = LlmAgent(
+    name="Plot",
+    description="Agent for running R code to make plots.",
+    model=model,
+    instruction=Plot,
+    tools=[
+        McpToolset(
+            connection_params=connection_params,
+            tool_filter=["make_plot", "make_ggplot"],
+        )
+    ],
+    after_tool_callback=save_plot_artifact,
+)
+
 # Create parent agent and assign children via sub_agents
 root_agent = LlmAgent(
     name="Coordinator",
-    description="I route requests to agents for managing R sessions or running R functions (including plotting).",
+    description="I route requests to agents for managing R sessions, running R code, and making plots.",
     model=model,
     instruction=Root,
     sub_agents=[
         session_agent,
-        code_agent,
+        run_agent,
+        plot_agent,
     ],
 )
