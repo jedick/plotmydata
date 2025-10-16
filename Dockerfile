@@ -4,10 +4,10 @@
 FROM rocker/r-ver AS r-ver
 
 # Install R packages
-RUN R -q -e 'install.packages(c("ellmer", "mcptools", "readr"))'
+RUN R -q -e 'install.packages(c("ellmer", "mcptools", "readr", "ggplot2"))'
 
 # Copy the project files
-COPY server.R .
+COPY server.R prompts.R .
 
 # Run the MCP server
 CMD ["Rscript", "server.R"]

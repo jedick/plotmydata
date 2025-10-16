@@ -9,7 +9,7 @@ To do this, we are engineering an ecosystem of AI agents and tools that can run 
 A test-driven approach to AI development using known-good traces as evaluation cases ensures that the system works as expected.
 It's made with industry-standard components, supporting different models and scalable deployment options.
 
-![Animation of a chat with an AI agent to plot histograms of sums of squares of normal random numbers](https://chnosz.net/guest/plotmydata/test-animated.gif)
+![Animation of a chat with an AI agent to plot histograms of sums of squares of normal random numbers](https://chnosz.net/guest/plotmydata/test-animation.gif)
 
 Note: In this example, the agent uses the `Hide` tool to modify R variables without returning the results.
 This way the LLM isn't flooded with thousands of tokens representing random numbers.
@@ -101,12 +101,10 @@ The local LLM is [Gemma 3]; this can be changed in `model-runner.yaml`.
 
 ## Examples
 
-Click the example prompts below to toggle visibility of the output.
-
-<details>
+<details open>
 <summary><strong>Plotting data:</strong> <i>Plot radius_worst (y) vs radius_mean (x) from https://zenodo.org/records/3608984/files/breastcancer.csv?download=1. Add a blue 1:1 line and title "Breast Cancer Wisconsin (Diagnostic)".</i></summary>
 
-![Chat with AI agent to plot breast cancer data from a CSV file at a given URL"](https://chnosz.net/guest/plotmydata/breast-cancer.png)
+![Chat with AI agent to plot breast cancer data from a CSV file at a given URL](https://chnosz.net/guest/plotmydata/breast-cancer.png)
 
 Note: This dataset is from the [UCI Machine Learning Repository]. The Zenodo URL is used to download a CSV version.
 </details>
@@ -128,7 +126,7 @@ The full prompt history:
 - Run y = x^2
 - Plot a histogram of y
 
-![Chat with AI agent to use an R session"](https://chnosz.net/guest/plotmydata/use-session.png)
+![Chat with AI agent to use an R session](https://chnosz.net/guest/plotmydata/use-session.png)
 </details>
 
 ## Under the hood
