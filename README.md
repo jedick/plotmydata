@@ -21,16 +21,15 @@ This way the LLM isn't flooded with thousands of tokens representing random numb
 
 ## Running the project
 
-There are three modes of running the project with increasing degrees of containerization.
-The first two modes require local installation of the Python packages listed in `requirements.txt`.
+There project can be run with or without a container.
 
 <details open>
 <summary><strong>Containerless</strong></summary>
 
-Start the ADK web server with stdio transport to the mcptools MCP server (requires a local installation of R):
+This requires a local installation of R and Python with packages listed in `requirements.txt`.
+Configure the model and start the ADK web server:
 
 ```sh
-unset MCPGATEWAY_ENDPOINT
 export OPENAI_MODEL_NAME=gpt-4o-mini
 OPENAI_API_KEY=your-api-key adk web --reload_agents
 ```
@@ -40,37 +39,17 @@ This script also starts an R session that can be used to persist variables acros
 </details>
 
 <details>
-<summary><strong>Containerized MCP server</strong></summary>
-
-Start the ADK web server with SSE transport to Docker's MCP Gateway:
-
-This requires the plotmydata-tools and docker/mcp-gateway images (see below):
-
-```sh
-docker mcp gateway run --catalog=./catalog.yaml --servers=r-mcp --transport=sse --port=8811
-```
-
-In a different terminal:
-
-```sh
-export MCPGATEWAY_ENDPOINT=http://127.0.0.1:8811
-export OPENAI_MODEL_NAME=gpt-4o-mini
-OPENAI_API_KEY=your-api-key adk web --reload_agents
-```
-</details>
-
-<details>
-<summary><strong>Full containerization</strong></summary>
+<summary><strong>Containerized</strong></summary>
 
 First, build the project.
-This creates a compose **project** (plotmydata) and three **images** (plotmydata-tools, plotmydata-agent, docker/mcp-gateway):
+This creates a `plotmydata` Docker Compose project and a `plotmydata-app` image.
 
 ```sh
 docker compose build
 ```
 
-Next, put your OpenAI API key (`sk-proj-...`) in `secret.openai-api-key`.
-Then run the project:
+Now run the project.
+This uses your OpenAI API key (`sk-proj-...`) from `secret.openai-api-key`.
 
 ```sh
 docker compose up
@@ -132,7 +111,7 @@ The full prompt history:
 ## Under the hood
 
 Model Context Protocol (MCP) allows AI agents to interact with external tools in a client-server setup.
-We use Docker MCP Gateway to connect an [Agent Development Kit] client to an MCP server from the [mcptools] R package.
+We connect an [Agent Development Kit] client to an MCP server from the [mcptools] R package.
 [Docker Compose] supports definitions of containerized AI agents and one or more MCP servers for scalable and secure deployment.
 
 - The `plotmydata-tools` image is based on [rocker/v-ver]
@@ -140,9 +119,6 @@ We use Docker MCP Gateway to connect an [Agent Development Kit] client to an MCP
 - The `plotmydata-agent` image is based on [Docker Python slim]
   - `PlotMyData/agent.py` defines an **McpToolset** that is passed to the LLM along with instructions for using the tools
   - `PlotMyData/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
-- The [Docker MCP Gateway] routes requests to MCP servers (just one in our case)
-  - A custom `catalog.yaml` makes our R MCP server visible to the MCP Gateway
-  - For more options, see [MCP Gateway docs] and [Docker MCP Catalog] for the default `catalog.yaml`
 - Specific actions are used for [Docker Watch]
   - `action: rebuild` is used for `server.R` because we need to restart the MCP server if the R code changes
   - `action: sync` is used for `PlotMyData` because the ADK web server supports hot reloading with the
@@ -152,11 +128,8 @@ We use Docker MCP Gateway to connect an [Agent Development Kit] client to an MCP
 [Docker Compose]: https://docs.docker.com/compose/
 [Agent Development Kit]: https://google.github.io/adk-docs/
 [mcptools]: https://github.com/posit-dev/mcptools
-[Docker MCP Gateway]: https://docs.docker.com/ai/mcp-gateway/
 [Docker Model Runner]: https://docs.docker.com/ai/model-runner/
 [Gemma 3]: https://deepmind.google/models/gemma/gemma-3/
-[MCP Gateway docs]: https://github.com/docker/mcp-gateway/blob/main/docs/mcp-gateway.md
-[Docker MCP Catalog]: http://desktop.docker.com/mcp/catalog/v2/catalog.yaml
 [rocker/v-ver]: https://rocker-project.org/images/versioned/r-ver
 [Docker Python slim]: https://hub.docker.com/_/python/#pythonversion-slim
 [docker/compose-for-agents]: https://github.com/docker/compose-for-agents
