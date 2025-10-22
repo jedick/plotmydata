@@ -69,7 +69,7 @@ async def save_plot_artifact(
     Callback function to save plot files as an ADK artifact.
     """
     if tool.name in ["make_plot", "make_ggplot"]:
-        # tool_response is a CallToolResult (type from mcp)
+        # tool_response is an MCP CallToolResult
         # https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#parsing-tool-results
         for content in tool_response.content:
             if isinstance(content, types.TextContent):

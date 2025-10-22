@@ -108,6 +108,10 @@ The full prompt history:
 ![Chat with AI agent to use an R session](https://chnosz.net/guest/plotmydata/use-session.png)
 </details>
 
+## Evals
+
+- 2025-10-22: 11 correct plots / 27 examples (41%)
+
 ## Under the hood
 
 Model Context Protocol (MCP) allows AI agents to interact with external tools in a client-server setup.
