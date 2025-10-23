@@ -110,7 +110,18 @@ The full prompt history:
 
 ## Evals
 
-- 2025-10-22: 11 correct plots / 27 examples (41%)
+The repo tracks both evaluation sets and prompt sets.
+For example, the `evals/01` directory contains all results for the first evaluation set using different prompt sets.
+The file name uses the short commit hash for the prompt set used for evaluation.
+
+**Evals are currently performed by a human.**
+`evals/edit_example.py` is a Streamlit app for maintaining the eval CSVs.
+Because of their size, the directories of reference and generated images are not stored in this repo.
+
+| Eval set | Size | Prompt set | Accuracy | Notes |
+|-|-|-|-|-|
+| 01 | 27 | [bb4eead] | 0.41 | Mainly base graphics: barplot, boxplot, cdplot, coplot, contour, dotchart, filled.dotchart, grid
+
 
 ## Under the hood
 
@@ -140,3 +151,5 @@ We connect an [Agent Development Kit] client to an MCP server from the [mcptools
 [Docker Watch]: https://docs.docker.com/compose/how-tos/file-watch/
 [R help page on Distributions]: https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html
 [UCI Machine Learning Repository]: https://doi.org/10.24432/C5DW2B
+
+[bb4eead]: https://github.com/jedick/plotmydata/commit/bb4eead2346d936f9c83108b16f20faf3e3c522c

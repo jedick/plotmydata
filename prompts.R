@@ -69,3 +69,31 @@ Important notes:
 - Use `device = "png"` unless the user requests a different format.
 - Always use the variable `filename` instead of an actual file name.
 '
+
+help_topic_prompt <- '
+Gets documentation for an R function, dataset, or other topic.
+
+Args:
+  topic: Topic or function to get help for.
+
+Returns:
+  Documentation text. May include runnable R examples.
+
+Example: Show the arguments of `lm` function with help_topic("lm").
+
+Example: Show the format of `airquality` dataset with help_topic("airquality").
+'
+
+help_package_prompt <- '
+Summarizes functions and datasets in an R package.
+
+Args:
+  package: Package to get help for.
+
+Returns:
+  Documentation text. Includes a package description and index of functions and datasets.
+
+Example: List datasets in base R with help_package("datasets").
+
+Example: List graphics functions in base R with help_package("graphics").
+'

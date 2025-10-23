@@ -2,6 +2,7 @@ from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
 from google.adk.tools.mcp_tool.mcp_session_manager import SseConnectionParams
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.tools.tool_context import ToolContext
+from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools.base_tool import BaseTool
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.agents import LlmAgent
@@ -101,7 +102,7 @@ async def save_plot_artifact(
 # Create agent to handle R sessions
 session_agent = LlmAgent(
     name="Session",
-    description="Agent for listing and selecting R sessions.",
+    description="Lists and selects R sessions.",
     model=model,
     instruction=Session,
     tools=[
@@ -115,7 +116,7 @@ session_agent = LlmAgent(
 # Create agent to run R code
 run_agent = LlmAgent(
     name="Run",
-    description="Agent for running R code without making plots.",
+    description="Runs R code without making plots.",
     model=model,
     instruction=Run,
     tools=[
@@ -130,7 +131,7 @@ run_agent = LlmAgent(
 # Create agent to run R code to make plots
 plot_agent = LlmAgent(
     name="Plot",
-    description="Agent for running R code to make plots.",
+    description="Runs R code to make plots.",
     model=model,
     instruction=Plot,
     tools=[
@@ -145,9 +146,16 @@ plot_agent = LlmAgent(
 # Create parent agent and assign children via sub_agents
 root_agent = LlmAgent(
     name="Coordinator",
-    description="I route requests to agents for managing R sessions, running R code, and making plots.",
+    description="Retrieves R documentation and coordinates agents for performing actions in R (manage sessions, run code, make plots).",
     model=model,
     instruction=Root,
+    # To pass control back to root, the help functions should be tools or a ToolAgent (not sub_agent)
+    tools=[
+        McpToolset(
+            connection_params=connection_params,
+            tool_filter=["help_package", "help_topic"],
+        )
+    ],
     sub_agents=[
         session_agent,
         run_agent,
