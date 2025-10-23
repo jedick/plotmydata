@@ -19,9 +19,9 @@ This way the LLM isn't flooded with thousands of tokens representing random numb
 - Instant visualization: Plots are shown in the chat interface and downloadable as conversation artifacts.
 - Interactive analysis: Use an R session so variables persist across tool calls.
 
-## Running the project
+## Running the app
 
-There project can be run with or without a container.
+The app can be run with or without a container.
 
 <details open>
 <summary><strong>Containerless</strong></summary>
@@ -122,22 +122,15 @@ Because of their size, the directories of reference and generated images are not
 |-|-|-|-|-|
 | 01 | 27 | [bb4eead] | 0.41 | Mainly base graphics: barplot, boxplot, cdplot, coplot, contour, dotchart, filled.dotchart, grid
 
-
 ## Under the hood
 
-Model Context Protocol (MCP) allows AI agents to interact with external tools in a client-server setup.
-We connect an [Agent Development Kit] client to an MCP server from the [mcptools] R package.
-[Docker Compose] supports definitions of containerized AI agents and one or more MCP servers for scalable and secure deployment.
-
-- The `plotmydata-tools` image is based on [rocker/v-ver]
-  - `server.R` defines tools to run R code and make plots
-- The `plotmydata-agent` image is based on [Docker Python slim]
-  - `PlotMyData/agent.py` defines an **McpToolset** that is passed to the LLM along with instructions for using the tools
-  - `PlotMyData/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
-- Specific actions are used for [Docker Watch]
-  - `action: rebuild` is used for `server.R` because we need to restart the MCP server if the R code changes
-  - `action: sync` is used for `PlotMyData` because the ADK web server supports hot reloading with the
-    [`--reload_agents`](https://github.com/google/adk-python/commit/e545e5a570c1331d2ed8fda31c7244b5e0f71584) flag
+- Model Context Protocol (MCP) allows AI agents to interact with external tools in a client-server setup
+- We connect an [Agent Development Kit] client to an MCP server from the [mcptools] R package
+- The Docker image is based on [rocker/r-ver] and adds R packages and a Python installation
+- [Docker Compose] is used for port mapping, secrets, and watching file changes with [Docker Watch]
+- Changes made to `PlotMyData/agent.py` are propagated to the running container and reflected in the ADK web server
+  - This requires the [`--reload_agents`] flag
+- `PlotMyData/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
 
 [R software environment]: https://www.r-project.org/
 [Docker Compose]: https://docs.docker.com/compose/
@@ -145,11 +138,15 @@ We connect an [Agent Development Kit] client to an MCP server from the [mcptools
 [mcptools]: https://github.com/posit-dev/mcptools
 [Docker Model Runner]: https://docs.docker.com/ai/model-runner/
 [Gemma 3]: https://deepmind.google/models/gemma/gemma-3/
-[rocker/v-ver]: https://rocker-project.org/images/versioned/r-ver
-[Docker Python slim]: https://hub.docker.com/_/python/#pythonversion-slim
+[rocker/r-ver]: https://rocker-project.org/images/versioned/r-ver
 [docker/compose-for-agents]: https://github.com/docker/compose-for-agents
 [Docker Watch]: https://docs.docker.com/compose/how-tos/file-watch/
-[R help page on Distributions]: https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html
 [UCI Machine Learning Repository]: https://doi.org/10.24432/C5DW2B
+[`--reload_agents`]: https://github.com/google/adk-python/commit/e545e5a570c1331d2ed8fda31c7244b5e0f71584
 
 [bb4eead]: https://github.com/jedick/plotmydata/commit/bb4eead2346d936f9c83108b16f20faf3e3c522c
+
+## Licenses
+
+- This repo is MIT
+- Code examples taken from R (used in evals) are GPL-2|GPL-3
