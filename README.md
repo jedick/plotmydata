@@ -16,6 +16,7 @@ This way the LLM isn't flooded with thousands of tokens representing random numb
 
 ## Features
 
+- Load data from built-in [R datasets] or user-provided URLs.
 - Instant visualization: Plots are shown in the chat interface and downloadable as conversation artifacts.
 - Interactive analysis: Use an R session so variables persist across tool calls.
 
@@ -26,8 +27,9 @@ The app can be run with or without a container.
 <details open>
 <summary><strong>Containerless</strong></summary>
 
-This requires a local installation of R and Python with packages listed in `requirements.txt`.
-Configure the model and start the ADK web server:
+- Install R and run `install.packages(c("ellmer", "mcptools", "readr", "ggplot2"))`.
+- Install Python with packages listed in `requirements.txt`.
+- Run these commands to configure the model and start the ADK web server:
 
 ```sh
 export OPENAI_MODEL_NAME=gpt-4o-mini
@@ -133,6 +135,7 @@ Because of their size, the directories of reference and generated images are not
 - `PlotMyData/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
 
 [R software environment]: https://www.r-project.org/
+[R datasets]: https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/00Index.html
 [Docker Compose]: https://docs.docker.com/compose/
 [Agent Development Kit]: https://google.github.io/adk-docs/
 [mcptools]: https://github.com/posit-dev/mcptools
@@ -149,4 +152,4 @@ Because of their size, the directories of reference and generated images are not
 ## Licenses
 
 - This repo is MIT
-- Code examples taken from R (used in evals) are GPL-2|GPL-3
+- Some code examples used in evals are taken from R and are GPL-2|GPL-3
