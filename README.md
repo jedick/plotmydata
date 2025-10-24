@@ -123,6 +123,7 @@ Because of their size, the directories of reference and generated images are not
 | Eval set | Size | Prompt set | Accuracy | Notes |
 |-|-|-|-|-|
 | 01 | 27 | [bb4eead] | 0.41 | Mainly base graphics: barplot, boxplot, cdplot, coplot, contour, dotchart, filled.dotchart, grid
+| 01 | 27 | [e9180aa] | 0.52 | Add help tools (R documentation) to agent
 
 ## Under the hood
 
@@ -148,6 +149,7 @@ Because of their size, the directories of reference and generated images are not
 [`--reload_agents`]: https://github.com/google/adk-python/commit/e545e5a570c1331d2ed8fda31c7244b5e0f71584
 
 [bb4eead]: https://github.com/jedick/plotmydata/commit/bb4eead2346d936f9c83108b16f20faf3e3c522c
+[e9180aa]: https://github.com/jedick/plotmydata/commit/e9180aa363195fd2cc011e11e4febc0f544f7878
 
 ## Licenses
 
