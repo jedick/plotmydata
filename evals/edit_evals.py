@@ -3,13 +3,58 @@ import pandas as pd
 import os
 from datetime import datetime
 import io
-from streamlit_shortcuts import shortcut_button
+from streamlit_shortcuts import add_shortcuts
 
 # Set page config
-st.set_page_config(page_title="Edit Examples CSV", layout="wide")
+st.set_page_config(page_title="Edit Evals CSV", layout="wide")
 
 # File path
-CSV_FILE = "examples.csv"
+CSV_FILE = "evals.csv"
+
+
+def shortcut_form_submit_button(
+    label: str, shortcut: str | list[str], hint: bool = True, **kwargs
+) -> bool:  # noqa: FBT002 (boolean positional arg)
+    """
+    This is streamlit_shortcuts.shortcut_button modified to use
+    st.form_submit_button instead of st.button  20251025 jmd
+
+    Streamlit button with a keyboard shortcut.
+
+    Args:
+        label: Button text (can be empty string)
+        shortcut: Single shortcut or list of shortcuts like 'ctrl+s', ['arrowleft', 'a'], etc.
+        hint: Show shortcut hint in button label (default: True)
+        **kwargs: All other st.button args (key, type, disabled, use_container_width, etc.)
+
+    Returns:
+        bool: True if button was clicked (same as st.button)
+    """
+    assert label is not None, "Button label cannot be None"
+    assert shortcut, "Shortcut parameter is required"
+
+    # Generate key if not provided
+    shortcut_str = shortcut if isinstance(shortcut, str) else str(shortcut)
+    if "key" not in kwargs:
+        kwargs["key"] = f"btn_{hash(label + shortcut_str) % 10000000}"
+
+    # Add hint to label if requested
+    if hint and label:
+        if isinstance(shortcut, str):
+            button_label = f"{label} `{shortcut}`"
+        else:
+            # For multiple shortcuts, show them separated by " or "
+            button_label = f"{label} `{' or '.join(shortcut)}`"
+    else:
+        button_label = label
+
+    # Create button WITHOUT hint parameter
+    clicked = st.form_submit_button(button_label, **kwargs)
+
+    # Add the shortcut
+    add_shortcuts(**{kwargs["key"]: shortcut})
+
+    return clicked
 
 
 def load_csv():
@@ -23,16 +68,6 @@ def load_csv():
     except Exception as e:
         st.error(f"Error loading CSV: {e}")
         return None
-
-
-def save_csv(df):
-    """Save the DataFrame to CSV file"""
-    try:
-        df.to_csv(CSV_FILE, index=False)
-        return True
-    except Exception as e:
-        st.error(f"Error saving CSV: {e}")
-        return False
 
 
 def find_last_nonblank_row(df):
@@ -72,57 +107,28 @@ def validate_boolean(bool_str):
     return False, "Must be TRUE or FALSE"
 
 
-def navigate_to_previous_row(df):
-    """Navigate to the previous row"""
-    if st.session_state.current_row > 0:
-        # Save current form data before switching
-        save_current_form_data(df)
-        st.session_state.current_row -= 1
-        st.session_state.form_data = {}
-        st.rerun()
+# Handle form submission
+def save_form(form_data, current_row):
+    # Load CSV
+    df = load_csv()
 
-
-def navigate_to_next_row(df):
-    """Navigate to the next row"""
-    if st.session_state.current_row < len(df) - 1:
-        # Save current form data before switching
-        save_current_form_data(df)
-        st.session_state.current_row += 1
-        st.session_state.form_data = {}
-        st.rerun()
+    # Update the DataFrame with form data
+    if current_row < len(df):
+        for col, value in form_data.items():
+            df.loc[current_row, col] = value
     else:
-        # We are on the last row; optionally add a new row if current row is complete
-        save_current_form_data(df)
+        # Add a new row
+        df = pd.concat([df, pd.DataFrame([form_data])], ignore_index=True)
 
-        current = df.iloc[st.session_state.current_row]
-        date_filled = (
-            pd.notna(current.get("Date")) and str(current.get("Date")).strip() != ""
-        )
-        prompt_filled = (
-            pd.notna(current.get("Prompt")) and str(current.get("Prompt")).strip() != ""
-        )
-
-        if date_filled and prompt_filled:
-            # Build a new empty row with today's date
-            new_row = {col: None for col in df.columns}
-            if "Number" in df.columns:
-                new_row["Number"] = len(df) + 1
-            new_row["Date"] = datetime.now().strftime("%Y-%m-%d")
-
-            df_new = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-            if save_csv(df_new):
-                # Move to the newly added row
-                st.session_state.current_row += 1
-                st.session_state.form_data = {}
-                st.rerun()
-
-
-def save_current_form_data(df):
-    """Save current form data to the DataFrame"""
-    if "form_data" in st.session_state and st.session_state.form_data:
-        for col, value in st.session_state.form_data.items():
-            df.loc[st.session_state.current_row, col] = value
-        save_csv(df)
+    # Save to CSV
+    try:
+        df.to_csv(CSV_FILE, index=False)
+        st.success("Changes saved successfully!")
+        return True
+    except Exception as e:
+        st.error(f"Error saving CSV: {e}")
+        st.error("Failed to save changes!")
+        return False
 
 
 def main():
@@ -134,181 +140,200 @@ def main():
     # Initialize session state
     if "current_row" not in st.session_state:
         st.session_state.current_row = find_last_nonblank_row(df)
-    if "form_data" not in st.session_state:
-        st.session_state.form_data = {}
 
-    # Create three columns for better layout
-    col1, col2, col3 = st.columns(3)
+    # Row selector (outside form)
+    selected_row = st.selectbox(
+        "Select Row:",
+        range(len(df)),
+        index=st.session_state.current_row,
+        format_func=lambda x: f"{x + 1}: {str(df.iloc[x]['Prompt'])[:50]}{'...' if len(str(df.iloc[x]['Prompt'])) > 50 else ''}",
+    )
 
-    with col1:
-        # Row selector
-        selected_row = st.selectbox(
-            "Select Row:",
-            range(len(df)),
-            index=st.session_state.current_row,
-            format_func=lambda x: f"{x + 1}: {str(df.iloc[x]['Prompt'])[:50]}{'...' if len(str(df.iloc[x]['Prompt'])) > 50 else ''}",
-        )
+    # Change in row selector updates page without saving current row
+    if selected_row != st.session_state.current_row:
+        # Update current row
+        st.session_state.current_row = selected_row
+        # Force a rerun to update the page
+        st.rerun()
 
-        # Save current form data
-        if selected_row != st.session_state.current_row:
-            for col in df.columns:
-                if col in st.session_state.form_data:
-                    df.loc[st.session_state.current_row, col] = (
-                        st.session_state.form_data[col]
+    # Load current row data
+    current_data = df.iloc[st.session_state.current_row].to_dict()
+
+    # Form for editing row data
+    with st.form("edit_row_form", enter_to_submit=False, border=False):
+
+        # Create three columns for better layout
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            # Date field
+            date_value = current_data["Date"] if pd.notna(current_data["Date"]) else ""
+            date_str = st.text_input(
+                "Date (YYYY-MM-DD)",
+                value=str(date_value) if date_value else "",
+                help="Enter date in YYYY-MM-DD format",
+            )
+
+            # Source field
+            source = st.text_input(
+                "Source",
+                value=(
+                    str(current_data["Source"])
+                    if pd.notna(current_data["Source"])
+                    else ""
+                ),
+            )
+
+            # Prompt field
+            prompt = st.text_area(
+                "Prompt",
+                value=(
+                    str(current_data["Prompt"])
+                    if pd.notna(current_data["Prompt"])
+                    else ""
+                ),
+                height=100,
+            )
+
+            # Gen_Tool field
+            gen_tool = st.text_input(
+                "Gen_Tool",
+                value=(
+                    str(current_data["Gen_Tool"])
+                    if pd.notna(current_data["Gen_Tool"])
+                    else ""
+                ),
+            )
+
+            # Correct field
+            correct_value = (
+                current_data["Correct"] if pd.notna(current_data["Correct"]) else ""
+            )
+            correct = st.selectbox(
+                "Correct",
+                options=["", "TRUE", "FALSE"],
+                index=(
+                    1
+                    if str(correct_value).upper() == "TRUE"
+                    else (2 if str(correct_value).upper() == "FALSE" else 0)
+                ),
+                help="Select TRUE or FALSE",
+            )
+
+            # Note field
+            note = st.text_input(
+                "Note",
+                value=(
+                    str(current_data["Note"]) if pd.notna(current_data["Note"]) else ""
+                ),
+            )
+
+            # Use a container so submit/navigtion buttons are located here instead of bottom of form
+            container = st.container(border=True)
+
+        with col2:
+            # Ref_Code field
+            ref_code = st.text_area(
+                "Ref_Code",
+                value=(
+                    str(current_data["Ref_Code"]).replace("\\n", "\n")
+                    if pd.notna(current_data["Ref_Code"])
+                    else ""
+                ),
+                height=200,
+            )
+
+            # Image viewer for Reference image
+            row_num_display = st.session_state.current_row + 1
+            image_id = f"{row_num_display:03d}.png"
+            reference_path = os.path.join("reference", image_id)
+            if os.path.exists(reference_path):
+                st.image(reference_path, width="stretch")
+            else:
+                st.markdown("🖼️")
+
+        with col3:
+            # Gen_Code field
+            gen_code = st.text_area(
+                "Gen_Code",
+                value=(
+                    str(current_data["Gen_Code"]).replace("\\n", "\n")
+                    if pd.notna(current_data["Gen_Code"])
+                    else ""
+                ),
+                height=200,
+            )
+
+            # Image viewer for Generate image
+            generated_path = os.path.join("generated", image_id)
+            if os.path.exists(generated_path):
+                st.image(generated_path, width="stretch")
+            else:
+                st.markdown("🖼️")
+
+        # Validation
+        date_valid, date_error = validate_date(date_str)
+        correct_valid, correct_error = validate_boolean(correct)
+
+        if not date_valid:
+            st.error(f"Date Error: {date_error}")
+        if not correct_valid:
+            st.error(f"Correct Error: {correct_error}")
+
+        # Get current form data
+        def get_form_data():
+            form_data = {
+                "Number": st.session_state.current_row + 1,
+                "Date": date_str if date_str else None,
+                "Source": source if source else None,
+                "Prompt": prompt if prompt else None,
+                "Ref_Code": (ref_code.replace("\n", "\\n") if ref_code else None),
+                "Gen_Tool": gen_tool if gen_tool else None,
+                "Gen_Code": (gen_code.replace("\n", "\\n") if gen_code else None),
+                "Correct": correct if correct else None,
+                "Note": note if note else None,
+            }
+            return form_data
+
+        # Navigation buttons
+        navcol1, navcol2 = container.columns(2)
+        with navcol1:
+            if shortcut_form_submit_button("⬆ Previous", "pageup"):
+                form_data = get_form_data()
+                save_form(form_data, st.session_state.current_row)
+                if st.session_state.current_row > 0:
+                    # Navigate to the previous row
+                    st.session_state.current_row -= 1
+                    st.rerun()
+        with navcol2:
+            if shortcut_form_submit_button("⬇ Next", "pagedown"):
+                form_data = get_form_data()
+                save_form(form_data, st.session_state.current_row)
+                if st.session_state.current_row < len(df) - 1:
+                    # Navigate to the next row
+                    st.session_state.current_row += 1
+                    st.rerun()
+                else:
+                    # We are on the last row; add a new row if current row is complete
+                    current = df.iloc[st.session_state.current_row]
+                    date_filled = (
+                        pd.notna(current.get("Date"))
+                        and str(current.get("Date")).strip() != ""
+                    )
+                    prompt_filled = (
+                        pd.notna(current.get("Prompt"))
+                        and str(current.get("Prompt")).strip() != ""
                     )
 
-            if save_csv(df):
-                st.success("Changes saved!")
-            else:
-                st.error("Failed to save changes!")
-                return
-
-            # Update current row
-            st.session_state.current_row = selected_row
-            st.session_state.form_data = {}
-            # Force a rerun to update the selectbox display
-            st.rerun()
-
-        # Load current row data
-        current_data = df.iloc[st.session_state.current_row].to_dict()
-
-        # Date field
-        date_value = current_data["Date"] if pd.notna(current_data["Date"]) else ""
-        date_str = st.text_input(
-            "Date (YYYY-MM-DD)",
-            value=str(date_value) if date_value else "",
-            help="Enter date in YYYY-MM-DD format",
-        )
-
-        # Source field
-        source = st.text_input(
-            "Source",
-            value=(
-                str(current_data["Source"]) if pd.notna(current_data["Source"]) else ""
-            ),
-        )
-
-        # Prompt field
-        prompt = st.text_area(
-            "Prompt",
-            value=(
-                str(current_data["Prompt"]) if pd.notna(current_data["Prompt"]) else ""
-            ),
-            height=100,
-        )
-
-        # Gen_Tool field
-        gen_tool = st.text_input(
-            "Gen_Tool",
-            value=(
-                str(current_data["Gen_Tool"])
-                if pd.notna(current_data["Gen_Tool"])
-                else ""
-            ),
-        )
-
-        # Correct field
-        correct_value = (
-            current_data["Correct"] if pd.notna(current_data["Correct"]) else ""
-        )
-        correct = st.selectbox(
-            "Correct",
-            options=["", "TRUE", "FALSE"],
-            index=(
-                1
-                if str(correct_value).upper() == "TRUE"
-                else (2 if str(correct_value).upper() == "FALSE" else 0)
-            ),
-            help="Select TRUE or FALSE",
-        )
-
-        # Note field
-        note = st.text_input(
-            "Note",
-            value=str(current_data["Note"]) if pd.notna(current_data["Note"]) else "",
-        )
-
-        innercol1, innercol2 = st.columns(2)
-
-        with innercol1:
-            if shortcut_button("⬆ Previous", "pageup"):
-                navigate_to_previous_row(df)
-        with innercol2:
-            if shortcut_button("⬇ Next", "pagedown"):
-                navigate_to_next_row(df)
-
-    with col2:
-        # Ref_Code field
-        ref_code = st.text_area(
-            "Ref_Code",
-            value=(
-                str(current_data["Ref_Code"]).replace("\\n", "\n")
-                if pd.notna(current_data["Ref_Code"])
-                else ""
-            ),
-            height=200,
-        )
-
-        # Image viewer for Reference image
-        row_num_display = st.session_state.current_row + 1
-        image_id = f"{row_num_display:03d}.png"
-        reference_path = os.path.join("reference", image_id)
-        if os.path.exists(reference_path):
-            st.image(reference_path, width="stretch")
-        else:
-            st.markdown("🖼️")
-
-    with col3:
-        # Gen_Code field
-        gen_code = st.text_area(
-            "Gen_Code",
-            value=(
-                str(current_data["Gen_Code"]).replace("\\n", "\n")
-                if pd.notna(current_data["Gen_Code"])
-                else ""
-            ),
-            height=200,
-        )
-
-        # Image viewer for Generate image
-        generated_path = os.path.join("generated", image_id)
-        if os.path.exists(generated_path):
-            st.image(generated_path, width="stretch")
-        else:
-            st.markdown("🖼️")
-
-    # Validation
-    date_valid, date_error = validate_date(date_str)
-    correct_valid, correct_error = validate_boolean(correct)
-
-    if not date_valid:
-        st.error(f"Date Error: {date_error}")
-    if not correct_valid:
-        st.error(f"Correct Error: {correct_error}")
-
-    # Update form data in session state
-    st.session_state.form_data = {
-        "Number": st.session_state.current_row + 1,
-        "Date": date_str if date_str else None,
-        "Source": source if source else None,
-        "Prompt": prompt if prompt else None,
-        "Ref_Code": (ref_code.replace("\n", "\\n") if ref_code else None),
-        "Gen_Tool": gen_tool if gen_tool else None,
-        "Gen_Code": (gen_code.replace("\n", "\\n") if gen_code else None),
-        "Correct": correct if correct else None,
-        "Note": note if note else None,
-    }
-
-    # Manual save button
-    if st.button("Save Changes", type="primary"):
-        # Update the DataFrame
-        for col, value in st.session_state.form_data.items():
-            df.loc[st.session_state.current_row, col] = value
-
-        if save_csv(df):
-            st.success("Changes saved successfully!")
-        else:
-            st.error("Failed to save changes!")
+                    if date_filled and prompt_filled:
+                        # Build a new empty row with today's date
+                        new_row = {col: None for col in form_data}
+                        new_row["Number"] = len(df) + 1
+                        new_row["Date"] = datetime.now().strftime("%Y-%m-%d")
+                        if save_form(new_row, st.session_state.current_row + 1):
+                            # Move to the newly added row
+                            st.session_state.current_row += 1
+                            st.rerun()
 
 
 if __name__ == "__main__":
