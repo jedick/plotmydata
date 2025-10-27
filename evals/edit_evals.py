@@ -3,13 +3,28 @@ import pandas as pd
 import os
 from datetime import datetime
 import io
-from streamlit_shortcuts import add_shortcuts
+from streamlit_shortcuts import add_shortcuts, shortcut_button
+from streamlit_js_eval import streamlit_js_eval
+
+# Custom CSS to reduce header space
+reduce_header_space = """
+   <style>
+       .block-container {
+           padding-top: 1rem;
+           padding-bottom: 0rem;
+           padding-left: 5rem;
+           padding-right: 5rem;
+       }
+   </style>
+"""
+st.markdown(reduce_header_space, unsafe_allow_html=True)
 
 # Set page config
 st.set_page_config(page_title="Edit Evals CSV", layout="wide")
 
-# File path
+# File paths
 CSV_FILE = "evals.csv"
+TEMP_ROW_FILE = ".temp_current_row"
 
 
 def shortcut_form_submit_button(
@@ -98,13 +113,34 @@ def validate_date(date_str):
         return False, "Date must be in YYYY-MM-DD format"
 
 
-def validate_boolean(bool_str):
-    """Validate boolean format TRUE/FALSE"""
-    if not bool_str:
-        return True, ""
-    if bool_str.upper() in ["TRUE", "FALSE"]:
-        return True, ""
-    return False, "Must be TRUE or FALSE"
+def save_current_row_to_temp(current_row):
+    """Save the current row number to a temporary file"""
+    try:
+        with open(TEMP_ROW_FILE, "w") as f:
+            f.write(str(current_row))
+        return True
+    except Exception as e:
+        st.error(f"Error saving current row: {e}")
+        return False
+
+
+def load_current_row_from_temp():
+    """Load the current row number from temporary file if it exists, then delete the file"""
+    if os.path.exists(TEMP_ROW_FILE):
+        try:
+            with open(TEMP_ROW_FILE, "r") as f:
+                current_row = int(f.read().strip())
+            # Delete the temporary file after reading
+            os.remove(TEMP_ROW_FILE)
+            return current_row
+        except (ValueError, FileNotFoundError, Exception) as e:
+            # If there's any error reading or parsing, clean up the temp file and return None
+            try:
+                os.remove(TEMP_ROW_FILE)
+            except FileNotFoundError:
+                pass
+            return None
+    return None
 
 
 # Handle form submission
@@ -112,8 +148,8 @@ def save_form(form_data, current_row):
     # Load CSV
     df = load_csv()
 
-    # Update the DataFrame with form data
     if current_row < len(df):
+        # Update the DataFrame with form data
         for col, value in form_data.items():
             df.loc[current_row, col] = value
     else:
@@ -127,7 +163,6 @@ def save_form(form_data, current_row):
         return True
     except Exception as e:
         st.error(f"Error saving CSV: {e}")
-        st.error("Failed to save changes!")
         return False
 
 
@@ -139,22 +174,45 @@ def main():
 
     # Initialize session state
     if "current_row" not in st.session_state:
-        st.session_state.current_row = find_last_nonblank_row(df)
+        # First check if there's a saved row from a reset operation
+        saved_row = load_current_row_from_temp()
+        if saved_row is not None and 0 <= saved_row < len(df):
+            st.session_state.current_row = saved_row
+        else:
+            # Fallback to original behavior: go to last nonblank row
+            st.session_state.current_row = find_last_nonblank_row(df)
 
-    # Row selector (outside form)
-    selected_row = st.selectbox(
-        "Select Row:",
-        range(len(df)),
-        index=st.session_state.current_row,
-        format_func=lambda x: f"{x + 1}: {str(df.iloc[x]['Prompt'])[:50]}{'...' if len(str(df.iloc[x]['Prompt'])) > 50 else ''}",
-    )
+    # Columns for eval selector and navigation buttons (outside form)
+    col1, col2 = st.columns([4, 1])
 
-    # Change in row selector updates page without saving current row
-    if selected_row != st.session_state.current_row:
-        # Update current row
-        st.session_state.current_row = selected_row
-        # Force a rerun to update the page
-        st.rerun()
+    with col1:
+        # Eval selector
+        selected_row = st.selectbox(
+            "Select Eval:",
+            range(len(df)),
+            index=st.session_state.current_row,
+            format_func=lambda x: f"{df.iloc[x]['Number'] if pd.notna(df.iloc[x]['Number']) else 'N/A'}: {str(df.iloc[x]['Prompt'])[:150]}{'...' if len(str(df.iloc[x]['Prompt'])) > 150 else ''}",
+        )
+        # Change in row selector updates page
+        if selected_row != st.session_state.current_row:
+            st.session_state.current_row = selected_row
+            st.rerun()
+
+    with col2:
+        # Navigation buttons
+        navcol1, navcol2 = st.columns(2)
+        with navcol1:
+            if shortcut_button("⬆ Previous", "pageup", use_container_width=True):
+                if st.session_state.current_row > 0:
+                    # Navigate to the previous row
+                    st.session_state.current_row -= 1
+                    st.rerun()
+        with navcol2:
+            if shortcut_button("⬇ Next", "pagedown", use_container_width=True):
+                if st.session_state.current_row < len(df) - 1:
+                    # Navigate to the next row
+                    st.session_state.current_row += 1
+                    st.rerun()
 
     # Load current row data
     current_data = df.iloc[st.session_state.current_row].to_dict()
@@ -211,13 +269,13 @@ def main():
             )
             correct = st.selectbox(
                 "Correct",
-                options=["", "TRUE", "FALSE"],
+                options=["", "True", "False"],
                 index=(
                     1
                     if str(correct_value).upper() == "TRUE"
                     else (2 if str(correct_value).upper() == "FALSE" else 0)
                 ),
-                help="Select TRUE or FALSE",
+                help="Select True or False",
             )
 
             # Note field
@@ -229,7 +287,7 @@ def main():
             )
 
             # Use a container so submit/navigtion buttons are located here instead of bottom of form
-            container = st.container(border=True)
+            save_container = st.container(border=True)
 
         with col2:
             # Ref_Code field
@@ -243,9 +301,16 @@ def main():
                 height=200,
             )
 
-            # Image viewer for Reference image
-            row_num_display = st.session_state.current_row + 1
-            image_id = f"{row_num_display:03d}.png"
+            # Get image filename from current eval number
+            current_number = current_data.get("Number")
+            if pd.notna(current_number):
+                try:
+                    image_id = f"{int(current_number):03d}.png"
+                except (ValueError, TypeError):
+                    image_id = "000.png"  # Fallback for invalid numbers
+            else:
+                image_id = "000.png"  # Fallback for missing numbers
+            # Image viewer for reference plot
             reference_path = os.path.join("reference", image_id)
             if os.path.exists(reference_path):
                 st.image(reference_path, width="stretch")
@@ -264,76 +329,59 @@ def main():
                 height=200,
             )
 
-            # Image viewer for Generate image
+            # Image viewer for generated plot
             generated_path = os.path.join("generated", image_id)
             if os.path.exists(generated_path):
                 st.image(generated_path, width="stretch")
             else:
                 st.markdown("🖼️")
 
-        # Validation
+        # Date validation
         date_valid, date_error = validate_date(date_str)
-        correct_valid, correct_error = validate_boolean(correct)
-
         if not date_valid:
             st.error(f"Date Error: {date_error}")
-        if not correct_valid:
-            st.error(f"Correct Error: {correct_error}")
 
         # Get current form data
         def get_form_data():
+            # Extract the Number from the current row in the CSV
+            current_number = current_data.get("Number")
             form_data = {
-                "Number": st.session_state.current_row + 1,
+                "Number": current_number,
                 "Date": date_str if date_str else None,
                 "Source": source if source else None,
                 "Prompt": prompt if prompt else None,
                 "Ref_Code": (ref_code.replace("\n", "\\n") if ref_code else None),
                 "Gen_Tool": gen_tool if gen_tool else None,
                 "Gen_Code": (gen_code.replace("\n", "\\n") if gen_code else None),
-                "Correct": correct if correct else None,
+                "Correct": correct == "True" if correct else None,
                 "Note": note if note else None,
             }
             return form_data
 
-        # Navigation buttons
-        navcol1, navcol2 = container.columns(2)
-        with navcol1:
-            if shortcut_form_submit_button("⬆ Previous", "pageup"):
+        # For some reason Streamlit doesn't recognize a form submit button with only one column
+        savecol1, savecol2, savecol3 = save_container.columns(3)
+        with savecol1:
+            if shortcut_form_submit_button("Save", "ctrl+s"):
+                # Manual save button
                 form_data = get_form_data()
                 save_form(form_data, st.session_state.current_row)
-                if st.session_state.current_row > 0:
-                    # Navigate to the previous row
-                    st.session_state.current_row -= 1
+                st.rerun()
+        with savecol2:
+            if shortcut_form_submit_button("Reset", "ctrl+r"):
+                # Save current row to temporary file and reload page -
+                # this actually resets the form data unlike st.rerun()
+                save_current_row_to_temp(st.session_state.current_row)
+                streamlit_js_eval(js_expressions="parent.window.location.reload()")
+        with savecol3:
+            if shortcut_form_submit_button("New", "ctrl+n"):
+                # Build a new empty row with next eval number and today's date
+                new_row = {col: None for col in df.columns}
+                new_row["Number"] = df["Number"].max() + 1
+                new_row["Date"] = datetime.now().strftime("%Y-%m-%d")
+                if save_form(new_row, len(df)):
+                    # Move to the newly added row
+                    st.session_state.current_row = len(df)
                     st.rerun()
-        with navcol2:
-            if shortcut_form_submit_button("⬇ Next", "pagedown"):
-                form_data = get_form_data()
-                save_form(form_data, st.session_state.current_row)
-                if st.session_state.current_row < len(df) - 1:
-                    # Navigate to the next row
-                    st.session_state.current_row += 1
-                    st.rerun()
-                else:
-                    # We are on the last row; add a new row if current row is complete
-                    current = df.iloc[st.session_state.current_row]
-                    date_filled = (
-                        pd.notna(current.get("Date"))
-                        and str(current.get("Date")).strip() != ""
-                    )
-                    prompt_filled = (
-                        pd.notna(current.get("Prompt"))
-                        and str(current.get("Prompt")).strip() != ""
-                    )
-
-                    if date_filled and prompt_filled:
-                        # Build a new empty row with today's date
-                        new_row = {col: None for col in form_data}
-                        new_row["Number"] = len(df) + 1
-                        new_row["Date"] = datetime.now().strftime("%Y-%m-%d")
-                        if save_form(new_row, st.session_state.current_row + 1):
-                            # Move to the newly added row
-                            st.session_state.current_row += 1
-                            st.rerun()
 
 
 if __name__ == "__main__":
