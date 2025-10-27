@@ -122,8 +122,9 @@ Because of their size, the directories of reference and generated images are not
 
 | Eval set | Size | Prompt set | Accuracy | Notes |
 |-|-|-|-|-|
-| 01 | 27 | [bb4eead] | 0.41 | Mainly base graphics: barplot, boxplot, cdplot, coplot, contour, dotchart, filled.dotchart, grid
+| 01 | 27 | [bb4eead] | 0.41 | Mainly base graphics: barplot, boxplot, cdplot, coplot, contour, dotchart, filled.contour, grid
 | 01 | 27 | [e9180aa] | 0.52 | Add help tools (R documentation) to agent
+| 02 | 37 | [e9180aa] | 0.49 | More base graphics: hist, image, lines, matplot, mosaicplot, pairs, rug, spineplot, plot.window
 
 ## Under the hood
 
