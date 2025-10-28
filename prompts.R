@@ -35,6 +35,13 @@ png(filename)
 df <- read.csv("https://zenodo.org/records/3608984/files/breastcancer.csv?download=1")
 plot(df$radius_mean, df$radius_worst, xlab = "radius_worst", ylab = "radius_mean")
 dev.off()
+
+Example: User requests "Plot radius_worst (y) vs radius_mean (x)" and [Uploaded Artifact: "/tmp/uploads/breast-cancer.csv"], then `code` is:
+
+png(filename)
+df <- read.csv("/tmp/uploads/breast-cancer.csv")
+plot(df$radius_mean, df$radius_worst, xlab = "radius_worst", ylab = "radius_mean")
+dev.off()
 '
 
 make_ggplot_prompt <- '

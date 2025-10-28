@@ -1,11 +1,15 @@
+from google.adk.plugins.save_files_as_artifacts_plugin import SaveFilesAsArtifactsPlugin
 from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
 from google.adk.tools.mcp_tool.mcp_session_manager import SseConnectionParams
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
+from google.adk.agents.callback_context import CallbackContext
 from google.adk.tools.tool_context import ToolContext
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools.base_tool import BaseTool
+from google.adk.models import LlmResponse, LlmRequest
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.agents import LlmAgent
+from google.adk.apps import App
 from google.genai.types import Part
 from typing import Dict, Any, Optional, Tuple
 from mcp import types, StdioServerParameters
@@ -36,6 +40,73 @@ model = LiteLlm(
     model=os.environ.get("OPENAI_MODEL_NAME", ""),
     api_key=os.environ.get("OPENAI_API_KEY", "fake-API-key"),
 )
+
+
+async def preprocess_artifact(
+    callback_context: CallbackContext, llm_request: LlmRequest
+) -> Optional[LlmResponse]:
+    """
+    Callback function to copy artifact to temporary file and inject file path into user message.
+    """
+
+    # Callback and artifact handling code modified from:
+    # https://google.github.io/adk-docs/callbacks/types-of-callbacks/#before-model-callback
+    # https://github.com/google/adk-python/issues/2176#issuecomment-3395469070
+
+    # Inspect the last user message in the request contents
+    last_user_message = ""
+    if llm_request.contents and llm_request.contents[-1].role == "user":
+        if llm_request.contents[-1].parts:
+            last_user_message = llm_request.contents[-1].parts[-1].text
+    # If a file was uploaded then last_user_message should be e.g. "[Uploaded Artifact: file_name]"
+    # (message part added by SaveFilesAsArtifactsPlugin())
+    print(f"[preprocess_artifact] Inspecting last user message: '{last_user_message}'")
+
+    # Check for user message
+    if last_user_message is not None:
+
+        # We'll only add a text part if artifact isn't available or can't be saved
+        added_text = ""
+        # List available artifacts
+        artifacts = await callback_context.list_artifacts()
+        if len(artifacts) == 0:
+            added_text = "No artifacts are available"
+        else:
+            most_recent_file = artifacts[-1]
+            try:
+                # Get artifact and byte data
+                artifact = await callback_context.load_artifact(
+                    filename=most_recent_file
+                )
+                byte_data = artifact.inline_data.data
+                # Save artifact as temporary file
+                upload_dir = "/tmp/uploads"
+                file_name = artifact.inline_data.display_name
+                file_path = os.path.join(upload_dir, file_name)
+                # Write the file
+                with open(file_path, "wb") as f:
+                    f.write(byte_data)
+                # Set appropriate permissions
+                os.chmod(file_path, 0o644)
+                # Inject temporary file path into user message
+                # original: [Uploaded Artifact: file_name] (as inserted by SaveFilesAsArtifactsPlugin())
+                # modified: [Uploaded Artifact: file_path]
+                modified_text = last_user_message.replace(file_name, file_path)
+                llm_request.contents[-1].parts[-1].text = modified_text
+                print(f"[preprocess_artifact] Modified user message: '{modified_text}'")
+
+            except Exception as e:
+                added_text = f"Error processing artifact: {str(e)}"
+
+        # If there were any issues, add a new part to the user message
+        if added_text:
+            llm_request.contents[-1].parts.append(types.Part(text=added_text))
+            print(
+                f"[preprocess_artifact] Added text part to user message: '{added_text}'"
+            )
+
+    # Return None to allow the possibly modified request to go to the LLM
+    return None
 
 
 def detect_file_type(byte_data: bytes) -> Tuple[str, str]:
@@ -161,4 +232,13 @@ root_agent = LlmAgent(
         run_agent,
         plot_agent,
     ],
+    # Save user-uploaded artifact as a temporary file to be accessed by R code
+    before_model_callback=preprocess_artifact,
+)
+
+app = App(
+    name="PlotMyData",
+    root_agent=root_agent,
+    # This inserts user messages like '[Uploaded Artifact: "breast-cancer.csv"]'
+    plugins=[SaveFilesAsArtifactsPlugin()],
 )
