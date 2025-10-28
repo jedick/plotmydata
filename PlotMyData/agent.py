@@ -14,6 +14,7 @@ from google.genai.types import Part
 from typing import Dict, Any, Optional, Tuple
 from mcp import types, StdioServerParameters
 from prompts import Root, Session, Run, Plot
+import pandas as pd
 import base64
 import os
 
@@ -92,6 +93,38 @@ async def preprocess_artifact(
                 # original: [Uploaded Artifact: file_name] (as inserted by SaveFilesAsArtifactsPlugin())
                 # modified: [Uploaded Artifact: file_path]
                 modified_text = last_user_message.replace(file_name, file_path)
+
+                # If the uploaded file is a CSV, summarize it and append to the message
+                # CSV Summary:
+                # - col1: int64
+                # - col2: float64, missing=3
+                # - col3: string
+                if file_path.lower().endswith(".csv"):
+                    csv_summary = ""
+                    try:
+                        # Read CSV
+                        df = pd.read_csv(file_path)
+
+                        # Prepare per-column summary: dtype and missing count
+                        dtypes = df.dtypes.astype(str).to_dict()
+                        missing = df.isna().sum().to_dict()
+
+                        lines = ["CSV Summary:"]
+                        for col in df.columns:
+                            dtype = dtypes.get(col, "unknown")
+                            miss = int(missing.get(col, 0))
+                            if miss > 0:
+                                lines.append(f"- {col}: {dtype}, missing={miss}")
+                            else:
+                                lines.append(f"- {col}: {dtype}")
+                        csv_summary = "\n".join(lines)
+                    except Exception as e:
+                        # Non-fatal: just log and proceed without CSV Summary
+                        print(f"[preprocess_artifact] CSV summarize error: {e}")
+
+                    if csv_summary:
+                        modified_text = f"{modified_text}\n\n{csv_summary}"
+
                 llm_request.contents[-1].parts[-1].text = modified_text
                 print(f"[preprocess_artifact] Modified user message: '{modified_text}'")
 
@@ -100,7 +133,7 @@ async def preprocess_artifact(
 
         # If there were any issues, add a new part to the user message
         if added_text:
-            llm_request.contents[-1].parts.append(types.Part(text=added_text))
+            llm_request.contents[-1].parts.append(Part(text=added_text))
             print(
                 f"[preprocess_artifact] Added text part to user message: '{added_text}'"
             )
