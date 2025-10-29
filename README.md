@@ -16,8 +16,13 @@ This way the LLM isn't flooded with thousands of tokens representing random numb
 
 ## Features
 
-- Load data from built-in [R datasets] or user-provided URLs.
-- Instant visualization: Plots are shown in the chat interface and downloadable as conversation artifacts.
+- Multiple data sources: Upload a file, provide a URL, or use built-in [R datasets].
+- Data awareness: Uploaded files are automatically summarized for the LLM.
+  - *This lets you describe a plot without knowing the exact variable names.*
+- Code generation: The LLM writes R code based on its internal knowledge.
+- Code execution: Tools are provided for making plots with base [R graphics] (default) and [ggplot2].
+  - *To use ggplot2, just mention "ggplot" or "ggplot2" in your message.*
+- Instant visualization: Plots are shown in the chat interface and downloadable as artifacts.
 - Interactive analysis: Use an R session so variables persist across tool calls.
 
 ## Running the app
@@ -83,11 +88,10 @@ The local LLM is [Gemma 3]; this can be changed in `model-runner.yaml`.
 ## Examples
 
 <details open>
-<summary><strong>Plotting data:</strong> <i>Plot radius_worst (y) vs radius_mean (x) from https://zenodo.org/records/3608984/files/breastcancer.csv?download=1. Add a blue 1:1 line and title "Breast Cancer Wisconsin (Diagnostic)".</i></summary>
+<summary><strong>Plotting data:</strong> <i>Plot radius_worst (y) vs radius_mean (x) from https://github.com/jedick/plotmydata/raw/refs/heads/main/evals/data/breast-cancer.csv. Add a blue 1:1 line and title "Breast Cancer Wisconsin (Diagnostic)".</i></summary>
 
-![Chat with AI agent to plot breast cancer data from a CSV file at a given URL](https://chnosz.net/guest/plotmydata/breast-cancer.png)
+![Plot of breast cancer data created by an AI agent instructed to use a CSV file at a given URL](https://chnosz.net/guest/plotmydata/breast-cancer.png)
 
-Note: This dataset is from the [UCI Machine Learning Repository]. The Zenodo URL is used to download a CSV version.
 </details>
 
 <details>
@@ -125,34 +129,45 @@ Because of their size, the directories of reference and generated images are not
 | 01 | 27 | [bb4eead] | 0.41 | Mainly base graphics: barplot, boxplot, cdplot, coplot, contour, dotchart, filled.contour, grid
 | 01 | 27 | [e9180aa] | 0.52 | Add help tools (R documentation) to agent
 | 02 | 37 | [e9180aa] | 0.49 | More base graphics: hist, image, lines, matplot, mosaicplot, pairs, rug, spineplot, plot.window
+| 03 | 40 | [30c22a1] | 0.50 | Handle uploaded CSV files
 
 ## Under the hood
 
 - Model Context Protocol (MCP) allows AI agents to interact with external tools in a client-server setup
 - We connect an [Agent Development Kit] client to an MCP server from the [mcptools] R package
+- For access by R, file uploads are saved as artifacts using an [ADK plugin], then as temporary files using a callback function.
+- `PlotMyData/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
+
+Container notes:
+
 - The Docker image is based on [rocker/r-ver] and adds R packages and a Python installation
 - [Docker Compose] is used for port mapping, secrets, and watching file changes with [Docker Watch]
-- Changes made to `PlotMyData/agent.py` are propagated to the running container and reflected in the ADK web server
-  - This requires the [`--reload_agents`] flag
-- `PlotMyData/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
+- The ADK web UI is run with the [`--reload_agents`] flag so that changes to `agent.py` on the host system are reflected in the running container
+
+## Licenses
+
+- This code in repo is licensed under MIT
+- Some examples used in evals are taken from R and are licensed under GPL-2|GPL-3
+- `breast-cancer.csv` (a CSV version of the dataset at the [UCI Machine Learning Repository]) is taken from [Kaggle] and is licensed under CC0
 
 [R software environment]: https://www.r-project.org/
 [R datasets]: https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/00Index.html
-[Docker Compose]: https://docs.docker.com/compose/
+[R graphics]: https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/00Index.html
+[ggplot2]: https://ggplot2.tidyverse.org/
 [Agent Development Kit]: https://google.github.io/adk-docs/
 [mcptools]: https://github.com/posit-dev/mcptools
 [Docker Model Runner]: https://docs.docker.com/ai/model-runner/
 [Gemma 3]: https://deepmind.google/models/gemma/gemma-3/
-[rocker/r-ver]: https://rocker-project.org/images/versioned/r-ver
 [docker/compose-for-agents]: https://github.com/docker/compose-for-agents
+[ADK plugin]: https://medium.com/google-cloud/2-minute-adk-manage-context-efficiently-with-artifacts-6fcc6683d274
+[rocker/r-ver]: https://rocker-project.org/images/versioned/r-ver
+[Docker Compose]: https://docs.docker.com/compose/
 [Docker Watch]: https://docs.docker.com/compose/how-tos/file-watch/
-[UCI Machine Learning Repository]: https://doi.org/10.24432/C5DW2B
 [`--reload_agents`]: https://github.com/google/adk-python/commit/e545e5a570c1331d2ed8fda31c7244b5e0f71584
+[UCI Machine Learning Repository]: https://doi.org/10.24432/C5DW2B
+[Kaggle]: https://www.kaggle.com/datasets/yasserh/breast-cancer-dataset
 
 [bb4eead]: https://github.com/jedick/plotmydata/commit/bb4eead2346d936f9c83108b16f20faf3e3c522c
 [e9180aa]: https://github.com/jedick/plotmydata/commit/e9180aa363195fd2cc011e11e4febc0f544f7878
+[30c22a1]: https://github.com/jedick/plotmydata/commit/30c22a166a237bfe26413b6c28278a6c467a65a7
 
-## Licenses
-
-- This repo is MIT
-- Some code examples used in evals are taken from R and are GPL-2|GPL-3

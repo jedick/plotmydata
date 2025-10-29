@@ -242,6 +242,16 @@ def main():
                 ),
             )
 
+            # File field
+            file = st.text_input(
+                "File",
+                value=(
+                    str(current_data["File"])
+                    if pd.notna(current_data["File"])
+                    else ""
+                ),
+            )
+
             # Prompt field
             prompt = st.text_area(
                 "Prompt",
@@ -349,6 +359,7 @@ def main():
                 "Number": current_number,
                 "Date": date_str if date_str else None,
                 "Source": source if source else None,
+                "File": file if file else None,
                 "Prompt": prompt if prompt else None,
                 "Ref_Code": (ref_code.replace("\n", "\\n") if ref_code else None),
                 "Gen_Tool": gen_tool if gen_tool else None,
