@@ -88,7 +88,7 @@ mcptools::mcp_server(tools = list(
 
   tool(
     run_visible,
-    "Run R code",
+    "Run R code and return the result",
     arguments = list(
       code = type_string("R code to run.")
     )

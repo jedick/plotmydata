@@ -16,14 +16,14 @@ This way the LLM isn't flooded with thousands of tokens representing random numb
 
 ## Features
 
-- Multiple data sources: Upload a file, provide a URL, or use built-in [R datasets].
-- Data awareness: Uploaded files are automatically summarized for the LLM.
-  - *This lets you describe a plot without knowing the exact variable names.*
-- Code generation: The LLM writes R code based on its internal knowledge.
-- Code execution: Tools are provided for making plots with base [R graphics] (default) and [ggplot2].
-  - *To use ggplot2, just mention "ggplot" or "ggplot2" in your message.*
-- Instant visualization: Plots are shown in the chat interface and downloadable as artifacts.
-- Interactive analysis: Use an R session so variables persist across tool calls.
+- Multiple data sources: Upload a file, provide a URL, or use built-in [R datasets]
+- Data awareness: Uploaded files are automatically summarized for the LLM
+  - *This lets you describe a plot without knowing the exact variable names*
+- Code generation: The LLM writes R code based on its internal knowledge
+- Code execution: Tools are provided for making plots with base [R graphics] (default) and [ggplot2]
+  - *To use ggplot2, just mention "ggplot" or "ggplot2" in your message*
+- Instant visualization: Plots are shown in the chat interface and downloadable as artifacts
+- Interactive analysis: The agent uses an R session so the environment persists across chat messages and tool calls
 
 ## Running the app
 
@@ -32,17 +32,11 @@ The app can be run with or without a container.
 <details open>
 <summary><strong>Containerless</strong></summary>
 
-- Install R and run `install.packages(c("ellmer", "mcptools", "readr", "ggplot2"))`.
-- Install Python with packages listed in `requirements.txt`.
-- Run these commands to configure the model and start the ADK web server:
+- Install R and run `install.packages(c("ellmer", "mcptools", "readr", "ggplot2"))`
+- Install Python with packages listed in `requirements.txt`
+- Put your OpenAI API key in a file named `secret.openai-api-key`
+- Execute `run.sh` to start an R session and launch the ADK web UI
 
-```sh
-export OPENAI_MODEL_NAME=gpt-4o-mini
-OPENAI_API_KEY=your-api-key adk web --reload_agents
-```
-
-`run.sh` is a shortcut to these commands, taking the API key from `secret.openai-api-key`.
-This script also starts an R session that can be used to persist variables across tools calls.
 </details>
 
 <details>
@@ -88,14 +82,14 @@ The local LLM is [Gemma 3]; this can be changed in `model-runner.yaml`.
 ## Examples
 
 <details open>
-<summary><strong>Plotting data:</strong> <i>Plot radius_worst (y) vs radius_mean (x) from https://github.com/jedick/plotmydata/raw/refs/heads/main/evals/data/breast-cancer.csv. Add a blue 1:1 line and title "Breast Cancer Wisconsin (Diagnostic)".</i></summary>
+<summary><strong>Plot data:</strong> <i>Plot radius_worst (y) vs radius_mean (x) from https://github.com/jedick/plotmydata/raw/refs/heads/main/evals/data/breast-cancer.csv. Add a blue 1:1 line and title "Breast Cancer Wisconsin (Diagnostic)".</i></summary>
 
 ![Plot of breast cancer data created by an AI agent instructed to use a CSV file at a given URL](https://chnosz.net/guest/plotmydata/breast-cancer.png)
 
 </details>
 
 <details>
-<summary><strong>Plotting functions:</strong> <i>Plot a Sierpiński Triangle</i></summary>
+<summary><strong>Plot functions:</strong> <i>Plot a Sierpiński Triangle</i></summary>
 
 <img width="50%" alt="Chat with AI agent to plot Sierpiński Triangle" src="https://chnosz.net/guest/plotmydata/sierpinski-triangle.png" />
 
@@ -103,15 +97,14 @@ Note: This dataset is from the [UCI Machine Learning Repository]. The Zenodo URL
 </details>
 
 <details>
-<summary><strong>Persist variables:</strong> <i>Use a session</i></summary>
+<summary><strong>Interactive analysis:</strong>
 
 The full prompt history:
-- Use a session
 - Save 100 random numbers from a normal distribution in x
 - Run y = x^2
 - Plot a histogram of y
 
-![Chat with AI agent to use an R session](https://chnosz.net/guest/plotmydata/use-session.png)
+![Histogram of squared normal random numbers created with an AI agent using R session](https://chnosz.net/guest/plotmydata/use-session.png)
 </details>
 
 ## Evals
@@ -135,7 +128,7 @@ Because of their size, the directories of reference and generated images are not
 
 - Model Context Protocol (MCP) allows AI agents to interact with external tools in a client-server setup
 - We connect an [Agent Development Kit] client to an MCP server from the [mcptools] R package
-- For access by R, file uploads are saved as artifacts using an [ADK plugin], then as temporary files using a callback function.
+- For access by R, file uploads are saved as artifacts using an [ADK plugin], then as temporary files using a callback function
 - `PlotMyData/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
 
 Container notes:
@@ -148,7 +141,8 @@ Container notes:
 
 - This code in repo is licensed under MIT
 - Some examples used in evals are taken from R and are licensed under GPL-2|GPL-3
-- `breast-cancer.csv` (a CSV version of the dataset at the [UCI Machine Learning Repository]) is taken from [Kaggle] and is licensed under CC0
+- `breast-cancer.csv` (the CSV version from [Kaggle]) is licensed under CC0;
+  the original dataset (from the [UCI Machine Learning Repository]) is licensed under CC BY 4.0
 
 [R software environment]: https://www.r-project.org/
 [R datasets]: https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/00Index.html

@@ -246,9 +246,7 @@ def main():
             file = st.text_input(
                 "File",
                 value=(
-                    str(current_data["File"])
-                    if pd.notna(current_data["File"])
-                    else ""
+                    str(current_data["File"]) if pd.notna(current_data["File"]) else ""
                 ),
             )
 

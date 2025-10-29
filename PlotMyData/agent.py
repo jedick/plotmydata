@@ -11,28 +11,23 @@ from google.adk.models.lite_llm import LiteLlm
 from google.adk.agents import LlmAgent
 from google.adk.apps import App
 from google.genai.types import Part
+from mcp import types, ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
 from typing import Dict, Any, Optional, Tuple
-from mcp import types, StdioServerParameters
-from prompts import Root, Session, Run, Plot
+from prompts import Root, Run, Plot
 import pandas as pd
 import base64
 import os
 
-# Define MCP connection parameters
-try:
-    # This environment variable will be defined for a Docker deployment
-    url = os.environ["MCPGATEWAY_ENDPOINT"]
-    connection_params = SseConnectionParams(url=url)
-except:
-    # Fully local deployment: use stdio
-    connection_params = StdioConnectionParams(
-        server_params=StdioServerParameters(
-            command="Rscript",
-            args=[
-                "server.R",
-            ],
-        )
-    )
+# Define MCP server parameters
+server_params = StdioServerParameters(
+    command="Rscript",
+    args=[
+        "server.R",
+    ],
+)
+# STDIO transport to local R MCP server
+connection_params = StdioConnectionParams(server_params=server_params)
 
 # Define model
 # If we're using the OpenAI API, get the value of OPENAI_MODEL_NAME set by entrypoint.sh
@@ -41,6 +36,21 @@ model = LiteLlm(
     model=os.environ.get("OPENAI_MODEL_NAME", ""),
     api_key=os.environ.get("OPENAI_API_KEY", "fake-API-key"),
 )
+
+
+async def select_r_session(
+    callback_context: CallbackContext,
+) -> Optional[types.Content]:
+    """
+    Callback function to select the first R session.
+    """
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            await session.call_tool("select_r_session", {"session": 1})
+            print("[select_r_session] R session selected!")
+    # Return None to allow the LlmAgent's normal execution
+    return None
 
 
 async def preprocess_artifact(
@@ -71,7 +81,7 @@ async def preprocess_artifact(
         # List available artifacts
         artifacts = await callback_context.list_artifacts()
         if len(artifacts) == 0:
-            added_text = "No artifacts are available"
+            added_text = "No uploaded file is available"
         else:
             most_recent_file = artifacts[-1]
             try:
@@ -91,10 +101,13 @@ async def preprocess_artifact(
                 os.chmod(file_path, 0o644)
                 # Inject temporary file path into user message
                 # original: [Uploaded Artifact: file_name] (as inserted by SaveFilesAsArtifactsPlugin())
-                # modified: [Uploaded Artifact: file_path]
+                # modified: [Uploaded File: file_path]
                 modified_text = last_user_message.replace(file_name, file_path)
+                modified_text = modified_text.replace(
+                    "Uploaded Artifact", "Uploaded File"
+                )
 
-                # If the uploaded file is a CSV, summarize it and append to the message
+                # If the uploaded file is a CSV, summarize it and append to the message, for example:
                 # CSV Summary:
                 # - col1: int64
                 # - col2: float64, missing=3
@@ -203,20 +216,6 @@ async def save_plot_artifact(
     return None
 
 
-# Create agent to handle R sessions
-session_agent = LlmAgent(
-    name="Session",
-    description="Lists and selects R sessions.",
-    model=model,
-    instruction=Session,
-    tools=[
-        McpToolset(
-            connection_params=connection_params,
-            tool_filter=["list_r_sessions", "select_r_session"],
-        )
-    ],
-)
-
 # Create agent to run R code
 run_agent = LlmAgent(
     name="Run",
@@ -250,7 +249,7 @@ plot_agent = LlmAgent(
 # Create parent agent and assign children via sub_agents
 root_agent = LlmAgent(
     name="Coordinator",
-    description="Retrieves R documentation and coordinates agents for performing actions in R (manage sessions, run code, make plots).",
+    description="Coordinates agents for performing actions in R (get help, run code, make plots).",
     model=model,
     instruction=Root,
     # To pass control back to root, the help functions should be tools or a ToolAgent (not sub_agent)
@@ -261,10 +260,11 @@ root_agent = LlmAgent(
         )
     ],
     sub_agents=[
-        session_agent,
         run_agent,
         plot_agent,
     ],
+    # Select R session
+    before_agent_callback=select_r_session,
     # Save user-uploaded artifact as a temporary file to be accessed by R code
     before_model_callback=preprocess_artifact,
 )
