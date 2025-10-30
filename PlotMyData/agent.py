@@ -4,7 +4,6 @@ from google.adk.tools.mcp_tool.mcp_session_manager import SseConnectionParams
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.tools.tool_context import ToolContext
-from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools.base_tool import BaseTool
 from google.adk.models import LlmResponse, LlmRequest
 from google.adk.models.lite_llm import LiteLlm
@@ -14,7 +13,7 @@ from google.genai.types import Part
 from mcp import types, ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from typing import Dict, Any, Optional, Tuple
-from prompts import Root, Run, Plot
+from prompts import Root, Data, Plot
 import pandas as pd
 import base64
 import os
@@ -27,7 +26,7 @@ server_params = StdioServerParameters(
     ],
 )
 # STDIO transport to local R MCP server
-connection_params = StdioConnectionParams(server_params=server_params)
+connection_params = StdioConnectionParams(server_params=server_params, timeout=10)
 
 # Define model
 # If we're using the OpenAI API, get the value of OPENAI_MODEL_NAME set by entrypoint.sh
@@ -65,10 +64,11 @@ async def preprocess_artifact(
     # https://github.com/google/adk-python/issues/2176#issuecomment-3395469070
 
     # Inspect the last user message in the request contents
-    last_user_message = ""
-    if llm_request.contents and llm_request.contents[-1].role == "user":
-        if llm_request.contents[-1].parts:
-            last_user_message = llm_request.contents[-1].parts[-1].text
+    try:
+        # last_user_message = llm_request.contents[-1].parts[-1].text
+        last_user_message = llm_request.contents[0].parts[-1].text
+    except:
+        last_user_message = None
     # If a file was uploaded then last_user_message should be e.g. "[Uploaded Artifact: file_name]"
     # (message part added by SaveFilesAsArtifactsPlugin())
     print(f"[preprocess_artifact] Inspecting last user message: '{last_user_message}'")
@@ -107,38 +107,8 @@ async def preprocess_artifact(
                     "Uploaded Artifact", "Uploaded File"
                 )
 
-                # If the uploaded file is a CSV, summarize it and append to the message, for example:
-                # CSV Summary:
-                # - col1: int64
-                # - col2: float64, missing=3
-                # - col3: string
-                if file_path.lower().endswith(".csv"):
-                    csv_summary = ""
-                    try:
-                        # Read CSV
-                        df = pd.read_csv(file_path)
-
-                        # Prepare per-column summary: dtype and missing count
-                        dtypes = df.dtypes.astype(str).to_dict()
-                        missing = df.isna().sum().to_dict()
-
-                        lines = ["CSV Summary:"]
-                        for col in df.columns:
-                            dtype = dtypes.get(col, "unknown")
-                            miss = int(missing.get(col, 0))
-                            if miss > 0:
-                                lines.append(f"- {col}: {dtype}, missing={miss}")
-                            else:
-                                lines.append(f"- {col}: {dtype}")
-                        csv_summary = "\n".join(lines)
-                    except Exception as e:
-                        # Non-fatal: just log and proceed without CSV Summary
-                        print(f"[preprocess_artifact] CSV summarize error: {e}")
-
-                    if csv_summary:
-                        modified_text = f"{modified_text}\n\n{csv_summary}"
-
-                llm_request.contents[-1].parts[-1].text = modified_text
+                # llm_request.contents[-1].parts[-1].text = modified_text
+                llm_request.contents[0].parts[-1].text = modified_text
                 print(f"[preprocess_artifact] Modified user message: '{modified_text}'")
 
             except Exception as e:
@@ -146,7 +116,8 @@ async def preprocess_artifact(
 
         # If there were any issues, add a new part to the user message
         if added_text:
-            llm_request.contents[-1].parts.append(Part(text=added_text))
+            # llm_request.contents[-1].parts.append(Part(text=added_text))
+            llm_request.contents[0].parts.append(Part(text=added_text))
             print(
                 f"[preprocess_artifact] Added text part to user message: '{added_text}'"
             )
@@ -216,19 +187,20 @@ async def save_plot_artifact(
     return None
 
 
-# Create agent to run R code
-run_agent = LlmAgent(
-    name="Run",
-    description="Runs R code without making plots.",
+# Create agent to load data
+data_agent = LlmAgent(
+    name="Data",
+    description="Runs R code to load and summarize data for downstream analysis.",
     model=model,
-    instruction=Run,
+    instruction=Data,
     tools=[
         McpToolset(
             connection_params=connection_params,
-            tool_filter=["run_visible", "run_hidden"],
+            tool_filter=["run_visible"],
         )
     ],
-    after_tool_callback=save_plot_artifact,
+    # Save user-uploaded artifact as a temporary file to be accessed by R code
+    before_model_callback=preprocess_artifact,
 )
 
 # Create agent to run R code to make plots
@@ -249,24 +221,23 @@ plot_agent = LlmAgent(
 # Create parent agent and assign children via sub_agents
 root_agent = LlmAgent(
     name="Coordinator",
-    description="Coordinates agents for performing actions in R (get help, run code, make plots).",
+    description="Coordinates agents for performing actions in R (get help, run code, load data, make plots).",
     model=model,
     instruction=Root,
-    # To pass control back to root, the help functions should be tools or a ToolAgent (not sub_agent)
+    # To pass control back to root, the help and run functions should be tools or a ToolAgent (not sub_agent)
     tools=[
         McpToolset(
             connection_params=connection_params,
-            tool_filter=["help_package", "help_topic"],
+            tool_filter=["help_package", "help_topic", "run_visible", "run_hidden"],
         )
     ],
     sub_agents=[
-        run_agent,
+        #        run_agent,
+        data_agent,
         plot_agent,
     ],
     # Select R session
     before_agent_callback=select_r_session,
-    # Save user-uploaded artifact as a temporary file to be accessed by R code
-    before_model_callback=preprocess_artifact,
 )
 
 app = App(

@@ -93,16 +93,14 @@ The local LLM is [Gemma 3]; this can be changed in `model-runner.yaml`.
 
 <img width="50%" alt="Chat with AI agent to plot Sierpiński Triangle" src="https://chnosz.net/guest/plotmydata/sierpinski-triangle.png" />
 
-Note: This dataset is from the [UCI Machine Learning Repository]. The Zenodo URL is used to download a CSV version.
 </details>
 
 <details>
-<summary><strong>Interactive analysis:</strong>
+<summary><strong>Interactive analysis:</strong></summary>
 
-The full prompt history:
-- Save 100 random numbers from a normal distribution in x
-- Run y = x^2
-- Plot a histogram of y
+- *Save 100 random numbers from a normal distribution in x*
+- *Run y = x^2*
+- *Plot a histogram of y*
 
 ![Histogram of squared normal random numbers created with an AI agent using R session](https://chnosz.net/guest/plotmydata/use-session.png)
 </details>
@@ -114,7 +112,7 @@ For example, the `evals/01` directory contains all results for the first evaluat
 The file name uses the short commit hash for the prompt set used for evaluation.
 
 **Evals are currently performed by a human.**
-`evals/edit_example.py` is a Streamlit app for maintaining the eval CSVs.
+`edit_evals.py` is a Streamlit app for maintaining the eval CSVs.
 Because of their size, the directories of reference and generated images are not stored in this repo.
 
 | Eval set | Size | Prompt set | Accuracy | Notes |
@@ -128,7 +126,7 @@ Because of their size, the directories of reference and generated images are not
 
 - Model Context Protocol (MCP) allows AI agents to interact with external tools in a client-server setup
 - We connect an [Agent Development Kit] client to an MCP server from the [mcptools] R package
-- For access by R, file uploads are saved as artifacts using an [ADK plugin], then as temporary files using a callback function
+- For access from R, file uploads are saved as artifacts using an [ADK plugin], then as temporary files using a callback function
 - `PlotMyData/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
 
 Container notes:

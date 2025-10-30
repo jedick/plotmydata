@@ -2,7 +2,7 @@
 
 # Run mcp_session() when R starts up to make the session available to the mcptools server
 # NOTE: mcp_session() needs to be run in an *interactive* R session, so we can't put it in server.R
-echo "mcptools::mcp_session()" > .Rprofile
+echo "source('summarize.R'); mcptools::mcp_session()" > .Rprofile
 # Start R in a detached tmux session named R-session
 # https://stackoverflow.com/questions/33426159/starting-a-new-tmux-session-and-detaching-it-all-inside-a-shell-script
 tmux new-session -d -s R-session "R"
