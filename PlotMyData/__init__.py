@@ -14,7 +14,16 @@
 
 import logging
 import litellm
+import os
+from pathlib import Path
 from . import agent
+
+# Ensure upload directory exists
+upload_dir = "/tmp/uploads"
+Path(upload_dir).mkdir(parents=True, exist_ok=True)
+os.chmod(
+    upload_dir, 0o755
+)  # Read, write, execute for owner; read and execute for others
 
 # Enable logging with reduced verbosity
 logging.basicConfig(
