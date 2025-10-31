@@ -157,6 +157,9 @@ async def save_plot_artifact(
     """
     Callback function to save plot files as an ADK artifact.
     """
+    # We just want to see the plot in the conversation, we don't need an extra LLM call to tell us it's there
+    tool_context.actions.skip_summarization = True
+
     if tool.name in ["make_plot", "make_ggplot"]:
         # tool_response is an MCP CallToolResult
         # https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#parsing-tool-results
@@ -190,7 +193,7 @@ async def save_plot_artifact(
 # Create agent to load data
 data_agent = LlmAgent(
     name="Data",
-    description="Runs R code to load and summarize data for downstream analysis.",
+    description="You load data into an R data frame and summarize it.",
     model=model,
     instruction=Data,
     tools=[
@@ -206,7 +209,7 @@ data_agent = LlmAgent(
 # Create agent to run R code to make plots
 plot_agent = LlmAgent(
     name="Plot",
-    description="Runs R code to make plots.",
+    description="You run R code to make plots.",
     model=model,
     instruction=Plot,
     tools=[
@@ -221,7 +224,7 @@ plot_agent = LlmAgent(
 # Create parent agent and assign children via sub_agents
 root_agent = LlmAgent(
     name="Coordinator",
-    description="Coordinates agents for performing actions in R (get help, run code, load data, make plots).",
+    description="You are a multi-agent system for performing actions in R.",
     model=model,
     instruction=Root,
     # To pass control back to root, the help and run functions should be tools or a ToolAgent (not sub_agent)

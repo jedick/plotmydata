@@ -5,7 +5,7 @@
 # col2: numeric, missing=3
 # col3: character
 
-summarize <- function(df) {
+data_summary <- function(df) {
   nrows <- nrow(df)
   ncols <- ncol(df)
   lines <- c(sprintf("Data frame dimensions: %d rows x %d columns", nrows, ncols), "Data Summary:")

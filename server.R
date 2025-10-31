@@ -88,7 +88,7 @@ mcptools::mcp_server(tools = list(
 
   tool(
     run_visible,
-    "Run R code and return the result",
+    run_visible_prompt,
     arguments = list(
       code = type_string("R code to run.")
     )
@@ -96,7 +96,7 @@ mcptools::mcp_server(tools = list(
 
   tool(
     run_hidden,
-    "Run R code without returning the result",
+    run_hidden_prompt,
     arguments = list(
       code = type_string("R code to run.")
     )

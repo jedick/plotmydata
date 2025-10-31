@@ -78,7 +78,7 @@ Important notes:
 '
 
 help_topic_prompt <- '
-Gets documentation for an R function, dataset, or other topic.
+Gets documentation for a dataset, function, or other topic.
 
 Args:
   topic: Topic or function to get help for.
@@ -86,13 +86,14 @@ Args:
 Returns:
   Documentation text. May include runnable R examples.
 
-Example: Show the arguments of `lm` function with help_topic("lm").
-
-Example: Show the format of `airquality` dataset with help_topic("airquality").
+Examples:
+- Show the arguments of the `lm` function: help_topic("lm").
+- Show the format of the `airquality` dataset: help_topic("airquality").
+- Get variables in `Titanic`: help_topic("Titanic").
 '
 
 help_package_prompt <- '
-Summarizes functions and datasets in an R package.
+Summarizes datasets and functions in an R package.
 
 Args:
   package: Package to get help for.
@@ -100,7 +101,33 @@ Args:
 Returns:
   Documentation text. Includes a package description and index of functions and datasets.
 
-Example: List datasets in base R with help_package("datasets").
+Examples:
+- Get the names of R datasets: help_package("datasets").
+- List graphics functions in base R: help_package("graphics").
+'
 
-Example: List graphics functions in base R with help_package("graphics").
+run_visible_prompt <- '
+Runs R code and returns the result.
+Does not make plots.
+
+Args:
+  code: R code to run.
+
+Returns:
+  Result of R code execution.
+'
+
+run_hidden_prompt <- '
+Run R code without returning the result.
+Does not make plots.
+
+Args:
+  code: R code to run.
+
+Returns:
+  Nothing.
+
+NOTE: Choose this tool if:
+  - The user asks to save the result in a variable, or
+  - You are performing intermediate calculations before making a plot.
 '
