@@ -96,7 +96,7 @@ The local LLM is [Gemma 3]; this can be changed in `model-runner.yaml`.
 </details>
 
 <details>
-<summary><strong>Interactive analysis:</strong></summary>
+<summary><strong>Interactive analysis:</strong> [click to open] </summary>
 
 - *Save 100 random numbers from a normal distribution in x*
 - *Run y = x^2*
@@ -118,9 +118,10 @@ Because of their size, the directories of reference and generated images are not
 | Eval set | Size | Prompt set | Accuracy | Notes |
 |-|-|-|-|-|
 | 01 | 27 | [bb4eead] | 0.41 | Mainly base graphics: barplot, boxplot, cdplot, coplot, contour, dotchart, filled.contour, grid
-| 01 | 27 | [e9180aa] | 0.52 | Add help tools (R documentation) to agent
+| 01 | 27 | [e9180aa] | 0.52 | Add help tools to get R documentation
 | 02 | 37 | [e9180aa] | 0.49 | More base graphics: hist, image, lines, matplot, mosaicplot, pairs, rug, spineplot, plot.window
 | 03 | 40 | [30c22a1] | 0.50 | Handle uploaded CSV files
+| 03 | 40 | [b8e5f8c] | 0.38 | Add agent for loading and summarizing data
 
 ## Under the hood
 
@@ -162,4 +163,5 @@ Container notes:
 [bb4eead]: https://github.com/jedick/plotmydata/commit/bb4eead2346d936f9c83108b16f20faf3e3c522c
 [e9180aa]: https://github.com/jedick/plotmydata/commit/e9180aa363195fd2cc011e11e4febc0f544f7878
 [30c22a1]: https://github.com/jedick/plotmydata/commit/30c22a166a237bfe26413b6c28278a6c467a65a7
+[b8e5f8c]: https://github.com/jedick/plotmydata/commit/b8e5f8ce5e03360b9bde26ff32acb7180d969694
 
