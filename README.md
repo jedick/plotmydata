@@ -35,7 +35,7 @@ The app can be run with or without a container.
 - Install R and run `install.packages(c("ellmer", "mcptools", "readr", "ggplot2"))`
 - Install Python with packages listed in `requirements.txt`
 - Put your OpenAI API key in a file named `secret.openai-api-key`
-- Execute `run.sh` to start an R session and launch the ADK web UI
+- Execute `run_web.sh` to start an R session and launch the ADK web UI
 
 </details>
 
@@ -111,9 +111,21 @@ The repo tracks both evaluation sets and prompt sets.
 For example, the `evals/01` directory contains all results for the first evaluation set using different prompt sets.
 The file name uses the short commit hash for the prompt set used for evaluation.
 
-**Evals are currently performed by a human.**
-`edit_evals.py` is a Streamlit app for maintaining the eval CSVs.
-Because of their size, the directories of reference and generated images are not stored in this repo.
+Each eval consists of a query and reference code and image.
+Because of their size, reference and generated images are not stored in this repo.
+
+To manage evals, copy the latest eval CSV file to `evals/evals.csv`.
+Then use e.g. `run_eval.sh 1` to run the first eval.
+This script: 1) saves the tool calls and generated code to the CSV file and 2) saves the generated image to the `evals/generated` directory.
+
+After running evals, change to the `evals` directory and run `streamlit run edit_evals.py` to edit the eval CSV file.
+This app allows:
+- Choosing an eval to edit
+- Viewing the reference and generated images side-by-side
+- Indicating whether the generated plot is correct (True or False)
+- Editing other eval data (e.g. query, file name for data upload, reference code, and note)
+
+**Accuracy (fraction of correct plots) is currently judged by a human.**
 
 | Eval set | Size | Prompt set | Accuracy | Notes |
 |-|-|-|-|-|

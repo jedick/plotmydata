@@ -376,7 +376,7 @@ def main():
                 save_form(form_data, st.session_state.current_row)
                 st.rerun()
         with savecol2:
-            if shortcut_form_submit_button("Reset", "ctrl+r"):
+            if shortcut_form_submit_button("Reload", "ctrl+r"):
                 # Save current row to temporary file and reload page -
                 # this actually resets the form data unlike st.rerun()
                 save_current_row_to_temp(st.session_state.current_row)

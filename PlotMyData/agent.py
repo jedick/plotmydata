@@ -9,8 +9,9 @@ from google.adk.models import LlmResponse, LlmRequest
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.agents import LlmAgent
 from google.adk.apps import App
-from google.genai.types import Part
-from mcp import types, ClientSession, StdioServerParameters
+from google.genai import types as genai_types
+from mcp import types as mcp_types
+from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from typing import Dict, Any, Optional, Tuple
 from prompts import Root, Data, Plot
@@ -39,7 +40,7 @@ model = LiteLlm(
 
 async def select_r_session(
     callback_context: CallbackContext,
-) -> Optional[types.Content]:
+) -> Optional[genai_types.Content]:
     """
     Callback function to select the first R session.
     """
@@ -116,8 +117,8 @@ async def preprocess_artifact(
 
         # If there were any issues, add a new part to the user message
         if added_text:
-            # llm_request.contents[-1].parts.append(Part(text=added_text))
-            llm_request.contents[0].parts.append(Part(text=added_text))
+            # llm_request.contents[-1].parts.append(genai_types.Part(text=added_text))
+            llm_request.contents[0].parts.append(genai_types.Part(text=added_text))
             print(
                 f"[preprocess_artifact] Added text part to user message: '{added_text}'"
             )
@@ -164,7 +165,7 @@ async def save_plot_artifact(
         # tool_response is an MCP CallToolResult
         # https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#parsing-tool-results
         for content in tool_response.content:
-            if isinstance(content, types.TextContent):
+            if isinstance(content, mcp_types.TextContent):
                 # Convert tool response (hex string) to bytes
                 byte_data = bytes.fromhex(content.text)
 
@@ -173,7 +174,7 @@ async def save_plot_artifact(
 
                 # Encode binary data to Base64 format
                 encoded = base64.b64encode(byte_data).decode("utf-8")
-                artifact_part = Part(
+                artifact_part = genai_types.Part(
                     inline_data={
                         "data": encoded,
                         "mime_type": mime_type,
