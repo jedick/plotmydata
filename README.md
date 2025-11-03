@@ -107,25 +107,8 @@ The local LLM is [Gemma 3]; this can be changed in `model-runner.yaml`.
 
 ## Evals
 
-The repo tracks both evaluation sets and prompt sets.
-For example, the `evals/01` directory contains all results for the first evaluation set using different prompt sets.
-The file name uses the short commit hash for the prompt set used for evaluation.
-
-Each eval consists of a query and reference code and image.
-Because of their size, reference and generated images are not stored in this repo.
-
-To manage evals, copy the latest eval CSV file to `evals/evals.csv`.
-Then use e.g. `run_eval.sh 1` to run the first eval.
-This script: 1) saves the tool calls and generated code to the CSV file and 2) saves the generated image to the `evals/generated` directory.
-
-After running evals, change to the `evals` directory and run `streamlit run edit_evals.py` to edit the eval CSV file.
-This app allows:
-- Choosing an eval to edit
-- Viewing the reference and generated images side-by-side
-- Indicating whether the generated plot is correct (True or False)
-- Editing other eval data (e.g. query, file name for data upload, reference code, and note)
-
-**Accuracy (fraction of correct plots) is currently judged by a human.**
+Accuracy = fraction of correct plots.
+**Plot correctness is currently judged by a human.**
 
 | Eval set | Size | Prompt set | Accuracy | Notes |
 |-|-|-|-|-|
@@ -134,6 +117,30 @@ This app allows:
 | 02 | 37 | [e9180aa] | 0.49 | More base graphics: hist, image, lines, matplot, mosaicplot, pairs, rug, spineplot, plot.window
 | 03 | 40 | [30c22a1] | 0.50 | Handle uploaded CSV files
 | 03 | 40 | [b8e5f8c] | 0.38 | Add agent for loading and summarizing data
+
+<details>
+<summary>Evals management</summary>
+
+The repo tracks both evaluation sets and prompt sets.
+For example, the `evals/01` directory contains all results for the first evaluation set using different prompt sets.
+The file name uses the short commit hash for the prompt set used for evaluation.
+
+Each eval consists of a query and reference code and image.
+Because of their size, reference and generated images are not stored in this repo.
+
+To run evals, copy the latest eval CSV file to `evals/evals.csv`.
+Then use e.g. `run_eval.sh 1` to run the first eval.
+This script: 1) saves the tool calls, generated code, and current date to the CSV file and 2) saves the generated image to the `evals/generated` directory.
+
+After running evals, change to the `evals` directory and run `streamlit run edit_evals.py` to edit the eval CSV file.
+This app allows:
+- Choosing an eval to edit
+- Viewing the reference and generated images side-by-side
+- Indicating whether the generated plot is correct (True or False)
+- Editing other eval data (e.g. query, file name for data upload, reference code, notes)
+- Adding new evals
+
+</details>
 
 ## Under the hood
 

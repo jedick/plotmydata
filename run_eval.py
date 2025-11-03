@@ -14,17 +14,17 @@ import os
 async def run_eval(
     runner,
     eval_number: int,
-    prompt: str,
+    query: str,
     session_dir: str,
     generated_dir: str,
     csv_file: str,
 ):
     """
-    Run an ADK eval with the given prompt and save results.
+    Run an ADK eval with the given query and save results.
 
     Args:
         eval_number: The eval number
-        prompt: The prompt to send to the agent
+        query: The query to send to the agent
         session_dir: Directory to save session data
         generated_dir: Directory to save generated artifacts
         csv_file: Path to the CSV file to update
@@ -36,7 +36,7 @@ async def run_eval(
     artifact_file = os.path.join(generated_dir, f"{eval_str}.png")
 
     # Prepare the user's message in ADK format
-    content = genai_types.Content(role="user", parts=[genai_types.Part(text=prompt)])
+    content = genai_types.Content(role="user", parts=[genai_types.Part(text=query)])
 
     # Set up the session service
     user_id = "eval_user"
@@ -44,7 +44,7 @@ async def run_eval(
         app_name=runner.app_name, user_id=user_id
     )
 
-    print(f"Running eval {eval_number}: {prompt[:100]}...")
+    print(f"Running eval {eval_number}: {query[:100]}...")
 
     event_history = []
     tool_calls = []
@@ -52,8 +52,8 @@ async def run_eval(
 
     try:
 
-        # Send the prompt and get response
-        print("Sending prompt to agent...")
+        # Send the query and get response
+        print("Sending query to agent...")
 
         # run_async executes the agent logic and yields events
         async for event in runner.run_async(
@@ -145,7 +145,7 @@ async def run_eval(
         # Save session data
         session_data = {
             "eval_number": eval_number,
-            "prompt": prompt,
+            "query": query,
             "events": event_history,
             "artifacts": artifact_keys,
         }
@@ -166,7 +166,7 @@ async def run_eval(
         # Save error to session file anyway
         session_data = {
             "eval_number": eval_number,
-            "prompt": prompt,
+            "query": query,
             "error": str(e),
         }
         with open(session_file, "w", encoding="utf-8") as f:
@@ -176,14 +176,14 @@ async def run_eval(
     return 0
 
 
-def get_prompt_from_csv(eval_number: int, csv_file: str) -> str:
-    """Read the Prompt column from evals.csv for the given eval number."""
+def get_query_from_csv(eval_number: int, csv_file: str) -> str:
+    """Read the Query column from evals.csv for the given eval number."""
     with open(csv_file, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             try:
                 if int(row["Number"]) == eval_number:
-                    return row["Prompt"]
+                    return row["Query"]
             except (ValueError, KeyError):
                 continue
     raise ValueError(f"Eval number {eval_number} not found in {csv_file}")
@@ -251,12 +251,12 @@ if __name__ == "__main__":
     Path(session_dir).mkdir(parents=True, exist_ok=True)
     Path(generated_dir).mkdir(parents=True, exist_ok=True)
 
-    # Read prompt from CSV
+    # Read query from CSV
     try:
-        prompt = get_prompt_from_csv(eval_number, csv_file)
-        if not prompt or not prompt.strip():
+        query = get_query_from_csv(eval_number, csv_file)
+        if not query or not query.strip():
             print(
-                f"Error: Prompt is empty for eval number {eval_number}", file=sys.stderr
+                f"Error: Query is empty for eval number {eval_number}", file=sys.stderr
             )
             sys.exit(1)
     except ValueError as e:
@@ -267,7 +267,7 @@ if __name__ == "__main__":
     runner = InMemoryRunner(agent=root_agent, plugins=[SaveFilesAsArtifactsPlugin()])
     # Start the asynchronous event loop and run the eval
     exit_code = asyncio.run(
-        run_eval(runner, eval_number, prompt, session_dir, generated_dir, csv_file)
+        run_eval(runner, eval_number, query, session_dir, generated_dir, csv_file)
     )
 
     sys.exit(exit_code)

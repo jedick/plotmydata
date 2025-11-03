@@ -86,7 +86,7 @@ def load_csv():
 
 
 def find_last_nonblank_row(df):
-    """Find the last row where both Date and Prompt are non-empty.
+    """Find the last row where both Date and Query are non-empty.
 
     Returns the index of the last completed row. If all rows are blank,
     returns 0 to start at the first row.
@@ -94,10 +94,10 @@ def find_last_nonblank_row(df):
     for idx in range(len(df) - 1, -1, -1):
         row = df.iloc[idx]
         date_filled = pd.notna(row.get("Date")) and str(row.get("Date")).strip() != ""
-        prompt_filled = (
-            pd.notna(row.get("Prompt")) and str(row.get("Prompt")).strip() != ""
+        query_filled = (
+            pd.notna(row.get("Query")) and str(row.get("Query")).strip() != ""
         )
-        if date_filled and prompt_filled:
+        if date_filled and query_filled:
             return idx
     return 0
 
@@ -191,7 +191,7 @@ def main():
             "Select Eval:",
             range(len(df)),
             index=st.session_state.current_row,
-            format_func=lambda x: f"{df.iloc[x]['Number'] if pd.notna(df.iloc[x]['Number']) else 'N/A'}: {str(df.iloc[x]['Prompt'])[:150]}{'...' if len(str(df.iloc[x]['Prompt'])) > 150 else ''}",
+            format_func=lambda x: f"{df.iloc[x]['Number'] if pd.notna(df.iloc[x]['Number']) else 'N/A'}: {str(df.iloc[x]['Query'])[:150]}{'...' if len(str(df.iloc[x]['Query'])) > 150 else ''}",
         )
         # Change in row selector updates page
         if selected_row != st.session_state.current_row:
@@ -250,12 +250,12 @@ def main():
                 ),
             )
 
-            # Prompt field
-            prompt = st.text_area(
-                "Prompt",
+            # Query field
+            query = st.text_area(
+                "Query",
                 value=(
-                    str(current_data["Prompt"])
-                    if pd.notna(current_data["Prompt"])
+                    str(current_data["Query"])
+                    if pd.notna(current_data["Query"])
                     else ""
                 ),
                 height=100,
@@ -358,7 +358,7 @@ def main():
                 "Date": date_str if date_str else None,
                 "Source": source if source else None,
                 "File": file if file else None,
-                "Prompt": prompt if prompt else None,
+                "Query": query if query else None,
                 "Ref_Code": (ref_code.replace("\n", "\\n") if ref_code else None),
                 "Gen_Tool": gen_tool if gen_tool else None,
                 "Gen_Code": (gen_code.replace("\n", "\\n") if gen_code else None),
