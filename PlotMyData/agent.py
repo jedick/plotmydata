@@ -14,7 +14,7 @@ from mcp import types as mcp_types
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from typing import Dict, Any, Optional, Tuple
-from prompts import Root, Data, Plot
+from prompts import Root, Run, Data, Plot
 import pandas as pd
 import base64
 import os
@@ -190,6 +190,22 @@ async def save_plot_artifact(
     # Passthrough for other tools or no matching content
     return None
 
+# Create agent to run R code
+run_agent = LlmAgent(
+    name="Run",
+    description="You run R code without making plots.",
+    model=model,
+    instruction=Run,
+    tools=[
+        McpToolset(
+            connection_params=connection_params,
+            tool_filter=["run_visible", "run_hidden"],
+        )
+    ],
+    # TODO: Only use this callback in the root agent if changes to LlmRequest are persistent
+    # https://github.com/google/adk-python/issues/2576
+    before_model_callback=preprocess_artifact,
+)
 
 # Create agent to load data
 data_agent = LlmAgent(
@@ -203,7 +219,6 @@ data_agent = LlmAgent(
             tool_filter=["run_visible"],
         )
     ],
-    # Save user-uploaded artifact as a temporary file to be accessed by R code
     before_model_callback=preprocess_artifact,
 )
 
@@ -219,6 +234,7 @@ plot_agent = LlmAgent(
             tool_filter=["make_plot", "make_ggplot"],
         )
     ],
+    before_model_callback=preprocess_artifact,
     after_tool_callback=save_plot_artifact,
 )
 
@@ -232,16 +248,18 @@ root_agent = LlmAgent(
     tools=[
         McpToolset(
             connection_params=connection_params,
-            tool_filter=["help_package", "help_topic", "run_visible", "run_hidden"],
+            tool_filter=["help_package", "help_topic"],
         )
     ],
     sub_agents=[
-        #        run_agent,
+        run_agent,
         data_agent,
         plot_agent,
     ],
     # Select R session
     before_agent_callback=select_r_session,
+    # Save user-uploaded artifact as a temporary file to be accessed by R code
+    before_model_callback=preprocess_artifact,
 )
 
 app = App(

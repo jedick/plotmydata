@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y python3 python3-pip python3-venv \
     && python3 -m venv /opt/venv \
     && export PATH="/opt/venv/bin:$PATH" \
     && pip --no-cache-dir install -r requirements.txt \
-    && R -q -e 'install.packages(c("ellmer", "mcptools", "readr", "ggplot2"))' \
+    && R -q -e 'install.packages(c("ellmer", "mcptools", "readr", "ggplot2", "tidyverse"))' \
     && chmod +x entrypoint.sh
 
 # Copy app files
