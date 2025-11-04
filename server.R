@@ -7,23 +7,36 @@ library(ellmer)
 # Read prompts
 source("prompts.R")
 
-# Get documentation for a package
+# Get help for a package
 help_package <- function(package) {
   help_page <- help(package = (package), help_type = "text")
   paste(unlist(help_page$info), collapse = "\n")
 }
 
-# Get documentation for a topic
+# Get help for a topic
 # Adapted from https://github.com/posit-dev/btw:::help_to_rd
 help_topic <- function(topic) {
   help_page <- help(topic = (topic), help_type = "text")
   if(length(help_page) == 0) {
-    return(paste0("No documentation found for '", topic, "'. Please check the name and try again."))
+    return(paste0("No help found for '", topic, "'. Please check the name and try again."))
   }
-  help_path <- as.character(help_page)
-  rd_name <- basename(help_path)
-  rd_package <- basename(dirname(dirname(help_path)))
-  tools::Rd_db(rd_package)[[paste0(rd_name, ".Rd")]]
+  # Handle multiple help files for a topic
+  # e.g. help_topic(plot) returns the help for both base::plot and graphics::plot.default
+  help_paths <- as.character(help_page)
+  help_result <- sapply(help_paths, function(help_path) {
+    rd_name <- basename(help_path)
+    rd_package <- basename(dirname(dirname(help_path)))
+    db <- tools::Rd_db(rd_package)[[paste0(rd_name, ".Rd")]]
+    paste(as.character(db), collapse = "")
+  })
+  # Insert headings to help the LLM distinguish multiple help files
+  # Heading before each help file (e.g. Help file 1, Help file 2)
+  help_result <- paste0("## Help file ", seq_along(help_result), ":\n", help_result)
+  # Heading at start of message (e.g. 2 help files were retrieved)
+  if(length(help_paths) == 1) help_info <- paste0("# ", length(help_paths), " help file was retrieved: ", paste(help_paths, collapse = ", "), ":\n")
+  if(length(help_paths) > 1) help_info <- paste0("# ", length(help_paths), " help files were retrieved: ", paste(help_paths, collapse = ", "), ":\n")
+  help_result <- c(help_info, help_result)
+  help_result
 }
 
 # Run R code and return the result

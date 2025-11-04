@@ -205,7 +205,7 @@ async def save_plot_artifact(
 # Create agent to run R code
 run_agent = LlmAgent(
     name="Run",
-    description="You run R code without making plots.",
+    description="Runs R code without making plots. Use the `Run` agent for executing code that does not load data or make a plot.",
     model=model,
     instruction=Run,
     tools=[
@@ -223,7 +223,7 @@ run_agent = LlmAgent(
 # Create agent to load data
 data_agent = LlmAgent(
     name="Data",
-    description="You load data into an R data frame and summarize it.",
+    description="Loads data into an R data frame and summarizes it. Use the `Data` agent for loading data from a file or URL before making a plot.",
     model=model,
     instruction=Data,
     tools=[
@@ -239,7 +239,7 @@ data_agent = LlmAgent(
 # Create agent to run R code to make plots
 plot_agent = LlmAgent(
     name="Plot",
-    description="You run R code to make plots.",
+    description="Makes plots using R code. Use the `Plot` agent after loading any required data.",
     model=model,
     instruction=Plot,
     tools=[
@@ -256,7 +256,8 @@ plot_agent = LlmAgent(
 # Create parent agent and assign children via sub_agents
 root_agent = LlmAgent(
     name="Coordinator",
-    description="You are a multi-agent system for performing actions in R.",
+    # "Use the..." tells sub-agents to transfer to Coordinator for help requests
+    description="Multi-agent system for performing actions in R. Use the `Coordinator` agent for getting help on packages, datasets, and functions.",
     model=model,
     instruction=Root,
     # To pass control back to root, the help and run functions should be tools or a ToolAgent (not sub_agent)
