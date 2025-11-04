@@ -23,6 +23,8 @@ import os
 server_params = StdioServerParameters(
     command="Rscript",
     args=[
+        # Use --vanilla to ignore .Rprofile, which is meant for the R instance running mcp_session()
+        "--vanilla",
         "server.R",
     ],
 )
