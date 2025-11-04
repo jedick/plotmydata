@@ -173,32 +173,33 @@ async def save_plot_artifact(
     tool_context.actions.skip_summarization = True
 
     if tool.name in ["make_plot", "make_ggplot"]:
-        # tool_response is an MCP CallToolResult
-        # https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#parsing-tool-results
-        for content in tool_response.content:
-            if isinstance(content, mcp_types.TextContent):
-                # Convert tool response (hex string) to bytes
-                byte_data = bytes.fromhex(content.text)
+        if hasattr(tool_response, "content"):
+            # tool_response is an MCP CallToolResult
+            # https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#parsing-tool-results
+            for content in tool_response.content:
+                if isinstance(content, mcp_types.TextContent):
+                    # Convert tool response (hex string) to bytes
+                    byte_data = bytes.fromhex(content.text)
 
-                # Detect file type from magic number
-                mime_type, file_extension = detect_file_type(byte_data)
+                    # Detect file type from magic number
+                    mime_type, file_extension = detect_file_type(byte_data)
 
-                # Encode binary data to Base64 format
-                encoded = base64.b64encode(byte_data).decode("utf-8")
-                artifact_part = genai_types.Part(
-                    inline_data={
-                        "data": encoded,
-                        "mime_type": mime_type,
-                    }
-                )
-                # Use second part of tool name (e.g. make_ggplot -> ggplot.png)
-                filename = f"{tool.name.split("_", 1)[1]}.{file_extension}"
-                await tool_context.save_artifact(
-                    filename=filename, artifact=artifact_part
-                )
-                return f"Plot created and saved as artifact: {filename}"
+                    # Encode binary data to Base64 format
+                    encoded = base64.b64encode(byte_data).decode("utf-8")
+                    artifact_part = genai_types.Part(
+                        inline_data={
+                            "data": encoded,
+                            "mime_type": mime_type,
+                        }
+                    )
+                    # Use second part of tool name (e.g. make_ggplot -> ggplot.png)
+                    filename = f"{tool.name.split("_", 1)[1]}.{file_extension}"
+                    await tool_context.save_artifact(
+                        filename=filename, artifact=artifact_part
+                    )
+                    return f"Plot created and saved as artifact: {filename}"
 
-    # Passthrough for other tools or no matching content
+    # Passthrough for other tools or no matching content (e.g. tool error)
     return None
 
 

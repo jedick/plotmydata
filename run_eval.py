@@ -9,25 +9,28 @@ import json
 import csv
 import sys
 import os
+import mimetypes
 
 
 async def run_eval(
     runner,
     eval_number: int,
+    eval_file: str,
     query: str,
     session_dir: str,
     generated_dir: str,
-    csv_file: str,
 ):
     """
     Run an ADK eval with the given query and save results.
 
     Args:
         eval_number: The eval number
+        eval_file: File to attach to user message
         query: The query to send to the agent
         session_dir: Directory to save session data
         generated_dir: Directory to save generated artifacts
-        csv_file: Path to the CSV file to update
+
+    Returns a tuple of (exit_code, tool_calls, gen_code).
     """
 
     # Format eval number with leading zeros
@@ -35,8 +38,36 @@ async def run_eval(
     session_file = os.path.join(session_dir, f"{eval_str}.json")
     artifact_file = os.path.join(generated_dir, f"{eval_str}.png")
 
-    # Prepare the user's message in ADK format
-    content = genai_types.Content(role="user", parts=[genai_types.Part(text=query)])
+    # Prepare the user's message in ADK format, optionally attaching a file
+    user_parts = [genai_types.Part(text=query)]
+
+    # Attempt to attach a file if specified in the CSV
+    attached_filename = eval_file.strip()
+    if attached_filename:
+        try:
+            file_path = os.path.join("evals", "data", attached_filename)
+            if os.path.exists(file_path):
+                with open(file_path, "rb") as f:
+                    file_bytes = f.read()
+                mime_type, _ = mimetypes.guess_type(file_path)
+                if not mime_type:
+                    mime_type = "application/octet-stream"
+                user_parts.append(
+                    genai_types.Part(
+                        inline_data=genai_types.Blob(
+                            data=file_bytes,
+                            mime_type=mime_type,
+                            display_name=attached_filename,
+                        )
+                    )
+                )
+                print(f"Attached file to message: {file_path}")
+            else:
+                print(f"Warning: File not found, skipping attachment: {file_path}")
+        except Exception as e:
+            print(f"Warning: Failed to attach file '{attached_filename}': {e}")
+
+    content = genai_types.Content(role="user", parts=user_parts)
 
     # Set up the session service
     user_id = "eval_user"
@@ -110,7 +141,7 @@ async def run_eval(
         artifact_keys = await runner.artifact_service.list_artifact_keys(
             app_name=runner.app_name, user_id=session.user_id, session_id=session.id
         )
-        print(f"artifact keys: {artifact_keys}")
+        print(f"Artifact keys: {artifact_keys}")
 
         # Save the last PNG artifact (if any)
         artifact_filename = f"{eval_str}.png"
@@ -155,9 +186,6 @@ async def run_eval(
 
         print(f"Session saved to {session_file}")
 
-        # Update CSV with results
-        update_csv_results(csv_file, eval_number, tool_calls, gen_code)
-
     except Exception as e:
         print(f"Error running eval: {e}", file=sys.stderr)
         import traceback
@@ -171,19 +199,24 @@ async def run_eval(
         }
         with open(session_file, "w", encoding="utf-8") as f:
             json.dump(session_data, f, indent=2, ensure_ascii=False)
-        return 1
+        return 1, None, None
 
-    return 0
+    return 0, tool_calls, gen_code
 
 
-def get_query_from_csv(eval_number: int, csv_file: str) -> str:
-    """Read the Query column from evals.csv for the given eval number."""
+def get_query_and_file_from_csv(eval_number: int, csv_file: str) -> tuple[str, str]:
+    """Read the Query and File columns from evals.csv for the given eval number.
+
+    Returns a tuple of (query, file_name). file_name may be an empty string if not provided.
+    """
     with open(csv_file, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             try:
-                if int(row["Number"]) == eval_number:
-                    return row["Query"]
+                if int(row.get("Number", "")) == eval_number:
+                    query = row.get("Query", "")
+                    file_name = row.get("File", "") or ""
+                    return query, file_name
             except (ValueError, KeyError):
                 continue
     raise ValueError(f"Eval number {eval_number} not found in {csv_file}")
@@ -213,8 +246,8 @@ def update_csv_results(
                     tool_calls_str = ", ".join(tool_calls)
                     row["Gen_Tool"] = tool_calls_str
 
-                    # Update Gen_Code column
-                    gen_code_str = "\n\n".join(gen_code)
+                    # Update Gen_Code column - convert newlines to escape sequences
+                    gen_code_str = "\n\n".join(gen_code).replace("\n", "\\n")
                     row["Gen_Code"] = gen_code_str
                     break
             except (ValueError, KeyError):
@@ -251,9 +284,9 @@ if __name__ == "__main__":
     Path(session_dir).mkdir(parents=True, exist_ok=True)
     Path(generated_dir).mkdir(parents=True, exist_ok=True)
 
-    # Read query from CSV
+    # Read query and optional file from CSV
     try:
-        query = get_query_from_csv(eval_number, csv_file)
+        query, file_name = get_query_and_file_from_csv(eval_number, csv_file)
         if not query or not query.strip():
             print(
                 f"Error: Query is empty for eval number {eval_number}", file=sys.stderr
@@ -263,11 +296,18 @@ if __name__ == "__main__":
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
+    # Pass optional file name to the async eval via environment variable used above
+    eval_file = None
+    if file_name and file_name.strip():
+        eval_file = file_name.strip()
+
     # Create a runner instance
     runner = InMemoryRunner(agent=root_agent, plugins=[SaveFilesAsArtifactsPlugin()])
     # Start the asynchronous event loop and run the eval
-    exit_code = asyncio.run(
-        run_eval(runner, eval_number, query, session_dir, generated_dir, csv_file)
+    exit_code, tool_calls, gen_code = asyncio.run(
+        run_eval(runner, eval_number, eval_file, query, session_dir, generated_dir)
     )
+    # Update CSV with results
+    update_csv_results(csv_file, eval_number, tool_calls, gen_code)
 
     sys.exit(exit_code)
