@@ -53,6 +53,17 @@ async def select_r_session(
     return None
 
 
+async def catch_tool_errors(tool: BaseTool, args: dict, tool_context: ToolContext):
+    """
+    Callback function to catch errors from tool calls and turn them into a message.
+    Modified from https://github.com/google/adk-python/discussions/795#discussioncomment-13460659
+    """
+    try:
+        return await tool.run_async(args=args, tool_context=tool_context)
+    except Exception as e:
+        return {"error": str(e)}
+
+
 async def preprocess_artifact(
     callback_context: CallbackContext, llm_request: LlmRequest
 ) -> Optional[LlmResponse]:
@@ -190,6 +201,7 @@ async def save_plot_artifact(
     # Passthrough for other tools or no matching content
     return None
 
+
 # Create agent to run R code
 run_agent = LlmAgent(
     name="Run",
@@ -205,6 +217,7 @@ run_agent = LlmAgent(
     # TODO: Only use this callback in the root agent if changes to LlmRequest are persistent
     # https://github.com/google/adk-python/issues/2576
     before_model_callback=preprocess_artifact,
+    before_tool_callback=catch_tool_errors,
 )
 
 # Create agent to load data
@@ -220,6 +233,7 @@ data_agent = LlmAgent(
         )
     ],
     before_model_callback=preprocess_artifact,
+    before_tool_callback=catch_tool_errors,
 )
 
 # Create agent to run R code to make plots
@@ -235,6 +249,7 @@ plot_agent = LlmAgent(
         )
     ],
     before_model_callback=preprocess_artifact,
+    before_tool_callback=catch_tool_errors,
     after_tool_callback=save_plot_artifact,
 )
 
@@ -260,6 +275,7 @@ root_agent = LlmAgent(
     before_agent_callback=select_r_session,
     # Save user-uploaded artifact as a temporary file to be accessed by R code
     before_model_callback=preprocess_artifact,
+    before_tool_callback=catch_tool_errors,
 )
 
 app = App(
