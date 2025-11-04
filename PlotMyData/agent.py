@@ -10,8 +10,8 @@ from google.adk.models.lite_llm import LiteLlm
 from google.adk.agents import LlmAgent
 from google.adk.apps import App
 from google.genai import types as genai_types
-from mcp import types as mcp_types
 from mcp import ClientSession, StdioServerParameters
+from mcp.types import CallToolResult, TextContent
 from mcp.client.stdio import stdio_client
 from typing import Dict, Any, Optional, Tuple
 from prompts import Root, Run, Data, Plot
@@ -61,7 +61,14 @@ async def catch_tool_errors(tool: BaseTool, args: dict, tool_context: ToolContex
     try:
         return await tool.run_async(args=args, tool_context=tool_context)
     except Exception as e:
-        return {"error": str(e)}
+        # Format the error as a tool response
+        # https://github.com/google/adk-python/commit/4df926388b6e9ebcf517fbacf2f5532fd73b0f71
+        response = CallToolResult(
+            # The error has class McpError; use e.error.message to get the text
+            content=[TextContent(type="text", text=e.error.message)],
+            isError=True,
+        )
+        return response.model_dump(exclude_none=True, mode="json")
 
 
 async def preprocess_artifact(
@@ -173,13 +180,14 @@ async def save_plot_artifact(
     tool_context.actions.skip_summarization = True
 
     if tool.name in ["make_plot", "make_ggplot"]:
-        if hasattr(tool_response, "content"):
-            # tool_response is an MCP CallToolResult
-            # https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#parsing-tool-results
-            for content in tool_response.content:
-                if isinstance(content, mcp_types.TextContent):
+        # In ADK 1.17.0, tool_response is a dict (i.e. result of model_dump method invoked on MCP CallToolResult instance):
+        # https://github.com/google/adk-python/commit/4df926388b6e9ebcf517fbacf2f5532fd73b0f71
+        # https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#parsing-tool-results
+        if "content" in tool_response and not tool_response["isError"]:
+            for content in tool_response["content"]:
+                if "type" in content and content["type"] == "text":
                     # Convert tool response (hex string) to bytes
-                    byte_data = bytes.fromhex(content.text)
+                    byte_data = bytes.fromhex(content["text"])
 
                     # Detect file type from magic number
                     mime_type, file_extension = detect_file_type(byte_data)
@@ -197,7 +205,12 @@ async def save_plot_artifact(
                     await tool_context.save_artifact(
                         filename=filename, artifact=artifact_part
                     )
-                    return f"Plot created and saved as artifact: {filename}"
+                    # Format the success message as a tool response
+                    text = f"Plot created and saved as artifact: {filename}"
+                    response = CallToolResult(
+                        content=[TextContent(type="text", text=text)],
+                    )
+                    return response.model_dump(exclude_none=True, mode="json")
 
     # Passthrough for other tools or no matching content (e.g. tool error)
     return None

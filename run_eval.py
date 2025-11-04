@@ -42,7 +42,7 @@ async def run_eval(
     user_parts = [genai_types.Part(text=query)]
 
     # Attempt to attach a file if specified in the CSV
-    attached_filename = eval_file.strip()
+    attached_filename = eval_file.strip() if eval_file else None
     if attached_filename:
         try:
             file_path = os.path.join("evals", "data", attached_filename)
