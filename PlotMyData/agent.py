@@ -2,14 +2,14 @@ from google.adk.plugins.save_files_as_artifacts_plugin import SaveFilesAsArtifac
 from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
 from google.adk.tools.mcp_tool.mcp_session_manager import SseConnectionParams
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
-from google.adk.agents.callback_context import CallbackContext
 from google.adk.tools.tool_context import ToolContext
 from google.adk.tools.base_tool import BaseTool
+from google.adk.agents.callback_context import CallbackContext
+from google.adk.agents import LlmAgent, SequentialAgent
 from google.adk.models import LlmResponse, LlmRequest
 from google.adk.models.lite_llm import LiteLlm
-from google.adk.agents import LlmAgent
 from google.adk.apps import App
-from google.genai import types as genai_types
+from google.genai import types
 from mcp import ClientSession, StdioServerParameters
 from mcp.types import CallToolResult, TextContent
 from mcp.client.stdio import stdio_client
@@ -17,6 +17,8 @@ from typing import Dict, Any, Optional, Tuple
 from prompts import Root, Run, Data, Plot
 import pandas as pd
 import base64
+import copy
+import ast
 import os
 
 # Define MCP server parameters
@@ -42,7 +44,7 @@ model = LiteLlm(
 
 async def select_r_session(
     callback_context: CallbackContext,
-) -> Optional[genai_types.Content]:
+) -> Optional[types.Content]:
     """
     Callback function to select the first R session.
     """
@@ -137,8 +139,8 @@ async def preprocess_artifact(
 
         # If there were any issues, add a new part to the user message
         if added_text:
-            # llm_request.contents[-1].parts.append(genai_types.Part(text=added_text))
-            llm_request.contents[0].parts.append(genai_types.Part(text=added_text))
+            # llm_request.contents[-1].parts.append(types.Part(text=added_text))
+            llm_request.contents[0].parts.append(types.Part(text=added_text))
             print(
                 f"[preprocess_artifact] Added text part to user message: '{added_text}'"
             )
@@ -178,7 +180,10 @@ async def save_plot_artifact(
     """
     Callback function to save plot files as an ADK artifact.
     """
-    # We just want to see the plot in the conversation, we don't need an extra LLM call to tell us it's there
+    # We just want to see the plot in the conversation;
+    # no need for an extra LLM call to tell us it's there.
+    # This also prevents the model from trying to rerun the code,
+    # so we can directly show the error message.
     tool_context.actions.skip_summarization = True
 
     if tool.name in ["make_plot", "make_ggplot"]:
@@ -196,7 +201,7 @@ async def save_plot_artifact(
 
                     # Encode binary data to Base64 format
                     encoded = base64.b64encode(byte_data).decode("utf-8")
-                    artifact_part = genai_types.Part(
+                    artifact_part = types.Part(
                         inline_data={
                             "data": encoded,
                             "mime_type": mime_type,
@@ -208,7 +213,7 @@ async def save_plot_artifact(
                         filename=filename, artifact=artifact_part
                     )
                     # Format the success message as a tool response
-                    text = f"Plot created and saved as artifact: {filename}"
+                    text = f"Plot created and saved as an artifact: {filename}"
                     response = CallToolResult(
                         content=[TextContent(type="text", text=text)],
                     )
@@ -216,6 +221,43 @@ async def save_plot_artifact(
 
     # Passthrough for other tools or no matching content (e.g. tool error)
     return None
+
+
+def final_tool_message(
+    callback_context: CallbackContext, llm_request: LlmRequest
+) -> Optional[LlmResponse]:
+    """Callback function to report tool success or error."""
+    agent_name = callback_context.agent_name
+    print(f"[Callback] After model call for agent: {agent_name}")
+
+    # Inspect the last user message in the request contents
+    # This should contain a text version of the tool response
+    last_user_message = ""
+    if llm_request.contents and llm_request.contents[-1].role == "user":
+        if llm_request.contents[-1].parts:
+            last_user_message = llm_request.contents[-1].parts[-1].text
+    print(f"[Callback] Inspecting last user message: '{last_user_message}'")
+
+    # Parse the message to get the tool response
+    returned_result = last_user_message.split("returned result: ")[1]
+    result_dict = ast.literal_eval(returned_result)
+    if result_dict["isError"]:
+        # Return the error message
+        final_message = (
+            "There was an error during code execution: "
+            + result_dict["content"][0]["text"]
+        )
+    else:
+        # Return the tool result (for run_visible) or
+        # success message (for run_hidden and save_plot_artifact)
+        final_message = result_dict["content"][0]["text"]
+
+    return LlmResponse(
+        content=types.Content(
+            role="model",
+            parts=[types.Part(text=final_message)],
+        )
+    )
 
 
 # Create agent to run R code
@@ -252,8 +294,8 @@ data_agent = LlmAgent(
     before_tool_callback=catch_tool_errors,
 )
 
-# Create agent to run R code to make plots
-plot_agent = LlmAgent(
+# Create agent to make plots using R code
+plot_subagent = LlmAgent(
     name="Plot",
     description="Makes plots using R code. Use the `Plot` agent after loading any required data.",
     model=model,
@@ -266,7 +308,24 @@ plot_agent = LlmAgent(
     ],
     before_model_callback=preprocess_artifact,
     before_tool_callback=catch_tool_errors,
-    after_tool_callback=save_plot_artifact,
+    after_tool_callback=[save_plot_artifact],
+)
+
+# To surface code errors as messages, create a sequential agent for Plot
+# (extra handling is needed because of skip_summarization = TRUE)
+
+end_subagent = LlmAgent(
+    name="End",
+    model=model,
+    # This instruction is never sent to an LLM, but it's provided for completeness
+    instruction="Ends the interaction with the user. Summarize the result or any errors.",
+    before_model_callback=final_tool_message,
+)
+
+plot_agent = SequentialAgent(
+    name="Plot",
+    sub_agents=[plot_subagent, end_subagent],
+    description="Makes plots using R code. Use the `Plot` agent after loading any required data.",
 )
 
 # Create parent agent and assign children via sub_agents

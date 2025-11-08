@@ -49,7 +49,7 @@ run_visible <- function(code) {
 # https://github.com/posit-dev/mcptools/issues/71
 run_hidden <- function(code) {
   eval(parse(text = code), globalenv())
-  return("The operation completed successfully")
+  return("The code executed successfully")
 }
 
 # Run R code to make a plot and return the image data

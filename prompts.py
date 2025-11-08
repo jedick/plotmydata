@@ -43,6 +43,7 @@ Important notes:
 - The `run_hidden` tool runs R commands without returning the result. This is useful for reducing LLM token usage while working with large variables.
 - You can use dplyr, tidyr, and other tidyverse packages.
 - Your response should always be valid, self-contained R code.
+- If the tool response is an error (isError: true), respond with the exact text of the error message and stop running code.
 """
 
 Data = """
