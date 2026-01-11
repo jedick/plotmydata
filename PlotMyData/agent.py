@@ -5,7 +5,7 @@ from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.tools.tool_context import ToolContext
 from google.adk.tools.base_tool import BaseTool
 from google.adk.agents.callback_context import CallbackContext
-from google.adk.agents import LlmAgent, SequentialAgent
+from google.adk.agents import LlmAgent
 from google.adk.models import LlmResponse, LlmRequest
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.apps import App
@@ -17,8 +17,6 @@ from typing import Dict, Any, Optional, Tuple
 from prompts import Root, Run, Data, Plot
 import pandas as pd
 import base64
-import copy
-import ast
 import os
 
 # Define MCP server parameters
@@ -223,43 +221,6 @@ async def save_plot_artifact(
     return None
 
 
-def final_tool_message(
-    callback_context: CallbackContext, llm_request: LlmRequest
-) -> Optional[LlmResponse]:
-    """Callback function to report tool success or error."""
-    agent_name = callback_context.agent_name
-    print(f"[Callback] After model call for agent: {agent_name}")
-
-    # Inspect the last user message in the request contents
-    # This should contain a text version of the tool response
-    last_user_message = ""
-    if llm_request.contents and llm_request.contents[-1].role == "user":
-        if llm_request.contents[-1].parts:
-            last_user_message = llm_request.contents[-1].parts[-1].text
-    print(f"[Callback] Inspecting last user message: '{last_user_message}'")
-
-    # Parse the message to get the tool response
-    returned_result = last_user_message.split("returned result: ")[1]
-    result_dict = ast.literal_eval(returned_result)
-    if result_dict["isError"]:
-        # Return the error message
-        final_message = (
-            "There was an error during code execution: "
-            + result_dict["content"][0]["text"]
-        )
-    else:
-        # Return the tool result (for run_visible) or
-        # success message (for run_hidden and save_plot_artifact)
-        final_message = result_dict["content"][0]["text"]
-
-    return LlmResponse(
-        content=types.Content(
-            role="model",
-            parts=[types.Part(text=final_message)],
-        )
-    )
-
-
 # Create agent to run R code
 run_agent = LlmAgent(
     name="Run",
@@ -295,7 +256,7 @@ data_agent = LlmAgent(
 )
 
 # Create agent to make plots using R code
-plot_subagent = LlmAgent(
+plot_agent = LlmAgent(
     name="Plot",
     description="Makes plots using R code. Use the `Plot` agent after loading any required data.",
     model=model,
@@ -308,24 +269,7 @@ plot_subagent = LlmAgent(
     ],
     before_model_callback=preprocess_artifact,
     before_tool_callback=catch_tool_errors,
-    after_tool_callback=[save_plot_artifact],
-)
-
-# To surface code errors as messages, create a sequential agent for Plot
-# (extra handling is needed because of skip_summarization = TRUE)
-
-end_subagent = LlmAgent(
-    name="End",
-    model=model,
-    # This instruction is never sent to an LLM, but it's provided for completeness
-    instruction="Ends the interaction with the user. Summarize the result or any errors.",
-    before_model_callback=final_tool_message,
-)
-
-plot_agent = SequentialAgent(
-    name="Plot",
-    sub_agents=[plot_subagent, end_subagent],
-    description="Makes plots using R code. Use the `Plot` agent after loading any required data.",
+    after_tool_callback=save_plot_artifact,
 )
 
 # Create parent agent and assign children via sub_agents
