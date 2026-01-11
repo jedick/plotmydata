@@ -15,7 +15,6 @@ from mcp.types import CallToolResult, TextContent
 from mcp.client.stdio import stdio_client
 from typing import Dict, Any, Optional, Tuple
 from prompts import Root, Run, Data, Plot
-import pandas as pd
 import base64
 import os
 

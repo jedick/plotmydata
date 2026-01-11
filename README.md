@@ -32,7 +32,7 @@ The app can be run with or without a container.
 <details open>
 <summary><strong>Containerless</strong></summary>
 
-- Install R and run `install.packages(c("ellmer", "mcptools", "readr", "ggplot2"))`
+- Install R and run `install.packages(c("ellmer", "mcptools", "readr", "ggplot2", "tidyverse"))`
 - Install Python with packages listed in `requirements.txt`
 - Put your OpenAI API key in a file named `secret.openai-api-key`
 - Execute `run_web.sh` to start an R session and launch the ADK web UI

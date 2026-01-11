@@ -20,5 +20,5 @@ trap cleanup SIGINT SIGTERM
 # Startup the ADK web UI
 export OPENAI_MODEL_NAME=gpt-4o
 #export OPENAI_MODEL_NAME=gpt-4o-mini
-OPENAI_API_KEY=`cat secret.openai-api-key` adk web --reload_agents
+OPENAI_API_KEY=`cat secret.openai-api-key` adk web --reload_agents --log_level=WARNING
 
