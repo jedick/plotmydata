@@ -155,7 +155,7 @@ async def preprocess_messages(
             tmp_dir = "/tmp/uploads/"
             if '[Uploaded Artifact: "' in user_message:
                 user_message = user_message.replace(
-                    '[Uploaded Artifact: "', f'Uploaded File: "{tmp_dir}'
+                    '[Uploaded Artifact: "', f'[Uploaded File: "{tmp_dir}'
                 )
                 llm_request.contents[i].parts[-1].text = user_message
                 print(f"[preprocess_messages] Modified user message: '{user_message}'")
