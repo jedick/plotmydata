@@ -76,27 +76,25 @@ async def preprocess_artifact(
     callback_context: CallbackContext, llm_request: LlmRequest
 ) -> Optional[LlmResponse]:
     """
-    Callback function to copy artifact to temporary file and inject file path into user message.
+    Callback function to copy the latest artifact to a temporary file.
     """
 
     # Callback and artifact handling code modified from:
     # https://google.github.io/adk-docs/callbacks/types-of-callbacks/#before-model-callback
     # https://github.com/google/adk-python/issues/2176#issuecomment-3395469070
 
-    # Inspect the last user message in the request contents
-    try:
-        # last_user_message = llm_request.contents[-1].parts[-1].text
-        last_user_message = llm_request.contents[0].parts[-1].text
-    except:
-        last_user_message = None
-    # If a file was uploaded then last_user_message should be e.g. "[Uploaded Artifact: file_name]"
-    # (message part added by SaveFilesAsArtifactsPlugin())
-    print(f"[preprocess_artifact] Inspecting last user message: '{last_user_message}'")
+    # Get the last user message in the request contents
+    last_user_message = llm_request.contents[-1].parts[-1].text
 
-    # Check for user message
-    if last_user_message is not None:
+    # Function call events have no text part, so set this to "" for string search in the next step
+    if last_user_message is None:
+        last_user_message = ""
 
-        # We'll only add a text part if artifact isn't available or can't be saved
+    # If a file was uploaded then SaveFilesAsArtifactsPlugin() adds "[Uploaded Artifact: file_name.csv]" to the user message
+    # Check for "Uploaded Artifact:" in the last user message
+    if "Uploaded Artifact:" in last_user_message:
+
+        # Add a text part only if there are any issues with accessing or saving the artifact
         added_text = ""
         # List available artifacts
         artifacts = await callback_context.list_artifacts()
@@ -111,25 +109,14 @@ async def preprocess_artifact(
                 )
                 byte_data = artifact.inline_data.data
                 # Save artifact as temporary file
-                upload_dir = "/tmp/uploads"
-                file_name = artifact.inline_data.display_name
-                file_path = os.path.join(upload_dir, file_name)
+                tmp_dir = "/tmp/uploads"
+                tmp_file_path = os.path.join(tmp_dir, most_recent_file)
                 # Write the file
-                with open(file_path, "wb") as f:
+                with open(tmp_file_path, "wb") as f:
                     f.write(byte_data)
                 # Set appropriate permissions
-                os.chmod(file_path, 0o644)
-                # Inject temporary file path into user message
-                # original: [Uploaded Artifact: file_name] (as inserted by SaveFilesAsArtifactsPlugin())
-                # modified: [Uploaded File: file_path]
-                modified_text = last_user_message.replace(file_name, file_path)
-                modified_text = modified_text.replace(
-                    "Uploaded Artifact", "Uploaded File"
-                )
-
-                # llm_request.contents[-1].parts[-1].text = modified_text
-                llm_request.contents[0].parts[-1].text = modified_text
-                print(f"[preprocess_artifact] Modified user message: '{modified_text}'")
+                os.chmod(tmp_file_path, 0o644)
+                print(f"[preprocess_artifact] Saved artifact as '{tmp_file_path}'")
 
             except Exception as e:
                 added_text = f"Error processing artifact: {str(e)}"
@@ -143,6 +130,36 @@ async def preprocess_artifact(
             )
 
     # Return None to allow the possibly modified request to go to the LLM
+    return None
+
+
+async def preprocess_messages(
+    callback_context: CallbackContext, llm_request: LlmRequest
+) -> Optional[LlmResponse]:
+    """
+    Callback function to modify user messages to point to temporary artifact file paths.
+    """
+
+    # Changes to session state made by callbacks are not preserved across events
+    # See: https://github.com/google/adk-docs/issues/904
+    # Therefore, for every callback invocation we need to loop over all events, not just the most recent one
+    for i in range(len(llm_request.contents)):
+        # Inspect the user message in the request contents
+        user_message = llm_request.contents[i].parts[-1].text
+        if user_message:
+            # Modify file path in user message
+            # Original file path inserted by SaveFilesAsArtifactsPlugin():
+            #   [Uploaded Artifact: "breast-cancer.csv"]
+            # Modified file path used by preprocess_artifact():
+            #   [Uploaded File: "/tmp/uploads/breast-cancer.csv"]
+            tmp_dir = "/tmp/uploads/"
+            if '[Uploaded Artifact: "' in user_message:
+                user_message = user_message.replace(
+                    '[Uploaded Artifact: "', f'Uploaded File: "{tmp_dir}'
+                )
+                llm_request.contents[i].parts[-1].text = user_message
+                print(f"[preprocess_messages] Modified user message: '{user_message}'")
+
     return None
 
 
@@ -232,9 +249,7 @@ run_agent = LlmAgent(
             tool_filter=["run_visible", "run_hidden"],
         )
     ],
-    # TODO: Only use this callback in the root agent if changes to LlmRequest are persistent
-    # https://github.com/google/adk-python/issues/2576
-    before_model_callback=preprocess_artifact,
+    before_model_callback=[preprocess_artifact, preprocess_messages],
     before_tool_callback=catch_tool_errors,
 )
 
@@ -250,7 +265,7 @@ data_agent = LlmAgent(
             tool_filter=["run_visible"],
         )
     ],
-    before_model_callback=preprocess_artifact,
+    before_model_callback=[preprocess_artifact, preprocess_messages],
     before_tool_callback=catch_tool_errors,
 )
 
@@ -266,7 +281,7 @@ plot_agent = LlmAgent(
             tool_filter=["make_plot", "make_ggplot"],
         )
     ],
-    before_model_callback=preprocess_artifact,
+    before_model_callback=[preprocess_artifact, preprocess_messages],
     before_tool_callback=catch_tool_errors,
     after_tool_callback=save_plot_artifact,
 )
@@ -292,8 +307,8 @@ root_agent = LlmAgent(
     ],
     # Select R session
     before_agent_callback=select_r_session,
-    # Save user-uploaded artifact as a temporary file to be accessed by R code
-    before_model_callback=preprocess_artifact,
+    # Save user-uploaded artifact as a temporary file and modify messages to point to this file
+    before_model_callback=[preprocess_artifact, preprocess_messages],
     before_tool_callback=catch_tool_errors,
 )
 
