@@ -1,1 +1,8 @@
+# Any secret files (including secret.openai-api-key)
 secret.*
+# Copied by Dockerfile from entrypoint.sh
+startup.sh
+# Created by entrypoint.sh
+.Rprofile
+# We can ignore __pycache__
+__pycache__
