@@ -188,18 +188,33 @@ def detect_file_type(byte_data: bytes) -> Tuple[str, str]:
         return "image/png", "png"
 
 
+async def skip_summarization_for_plot_success(
+    tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, tool_response: Dict
+) -> Optional[Dict]:
+    """
+    Callback function to turn off summarization if plot succeeded.
+    """
+
+    # If there was an error making the plot, the LLM tells the user what happened.
+    # This happens because skip_summarization is False by default.
+
+    # But if the plot was created successfully, there's
+    # no need for an extra LLM call to tell us it's there.
+    if tool.name in ["make_plot", "make_ggplot"]:
+        if not tool_response["isError"]:
+            tool_context.actions.skip_summarization = True
+
+    return None
+
+
 async def save_plot_artifact(
     tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, tool_response: Dict
 ) -> Optional[Dict]:
     """
     Callback function to save plot files as an ADK artifact.
     """
-    # We just want to see the plot in the conversation;
-    # no need for an extra LLM call to tell us it's there.
-    # This also prevents the model from trying to rerun the code,
-    # so we can directly show the error message.
-    tool_context.actions.skip_summarization = True
 
+    # Look for plot tool (so we don't bother with transfer_to_agent or other functions)
     if tool.name in ["make_plot", "make_ggplot"]:
         # In ADK 1.17.0, tool_response is a dict (i.e. result of model_dump method invoked on MCP CallToolResult instance):
         # https://github.com/google/adk-python/commit/4df926388b6e9ebcf517fbacf2f5532fd73b0f71
@@ -283,7 +298,7 @@ plot_agent = LlmAgent(
     ],
     before_model_callback=[preprocess_artifact, preprocess_messages],
     before_tool_callback=catch_tool_errors,
-    after_tool_callback=save_plot_artifact,
+    after_tool_callback=[skip_summarization_for_plot_success, save_plot_artifact],
 )
 
 # Create parent agent and assign children via sub_agents

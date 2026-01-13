@@ -1,6 +1,6 @@
 # Plot My Data - using R with AI agents
 
-[![Open in HF Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-sm.svg)](https://huggingface.co/spaces/jedick/plotmydata)
+[![Open in HF Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-lg.svg)](https://huggingface.co/spaces/jedick/plotmydata)
 
 The [R software environment] is an open-source platform for statistics, data analysis and visualization.
 To help R users solve real-world problems, AI agents need access to tools and guidance about their usage.
