@@ -14,7 +14,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.types import CallToolResult, TextContent
 from mcp.client.stdio import stdio_client
 from typing import Dict, Any, Optional, Tuple
-from prompts import Root, Run, Data, Plot
+from prompts import Root, Run, Data, Plot, Install
 import base64
 import os
 
@@ -301,6 +301,22 @@ plot_agent = LlmAgent(
     after_tool_callback=[skip_summarization_for_plot_success, save_plot_artifact],
 )
 
+# Create agent to install R packages
+install_agent = LlmAgent(
+    name="Install",
+    description="Installs R packages. Use the `Install` agent when an R package needs to be installed.",
+    model=model,
+    instruction=Install,
+    tools=[
+        McpToolset(
+            connection_params=connection_params,
+            tool_filter=["run_visible"],
+        )
+    ],
+    before_model_callback=[preprocess_artifact, preprocess_messages],
+    before_tool_callback=catch_tool_errors,
+)
+
 # Create parent agent and assign children via sub_agents
 root_agent = LlmAgent(
     name="Coordinator",
@@ -319,6 +335,7 @@ root_agent = LlmAgent(
         run_agent,
         data_agent,
         plot_agent,
+        install_agent,
     ],
     # Select R session
     before_agent_callback=select_r_session,
