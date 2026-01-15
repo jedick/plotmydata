@@ -5,7 +5,10 @@
 # Launch an *interactive* (i.e., long-running) R session and execute the mcp_session() command in the session
 
 # Create .Rprofile to run mcp_session() when R starts
-echo "library(tidyverse); source('data_summary.R'); mcptools::mcp_session()" > .Rprofile
+cat > .Rprofile << 'EOF'
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+library(tidyverse); source('data_summary.R'); mcptools::mcp_session()
+EOF
 
 # Start R in a detached tmux session named R-session
 # https://stackoverflow.com/questions/33426159/starting-a-new-tmux-session-and-detaching-it-all-inside-a-shell-script

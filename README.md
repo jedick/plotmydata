@@ -1,35 +1,29 @@
-# Plot My Data - using R with AI agents
+# PlotMyData
 
-[![Open in HF Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-lg.svg)](https://huggingface.co/spaces/jedick/plotmydata)
+[![Open in HF Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-lg-dark.svg)](https://huggingface.co/spaces/jedick/plotmydata)
 
-The [R software environment] is an open-source platform for statistics, data analysis and visualization.
-To help R users solve real-world problems, AI agents need access to tools and guidance about their usage.
+PlotMyData is an agentic data analysis and visualization system.
+It follows your prompts to drive an [R] session.
 
-The aim of this project is to build an intuitive conversational interface to powerful plotting functions.
-To do this, we are engineering an ecosystem of AI agents and tools that can run R code and make plots.
+You can start with example datasets, upload your own data, or download data from a URL (currently CSV files are supported).
+If you want to ask about the data or transform it before plotting, just say what you want to do.
 
-A test-driven approach to AI development using known-good traces as evaluation cases ensures that the system works as expected.
-It's made with industry-standard components, supporting different models and scalable deployment options.
-
-![Animation of a chat with an AI agent to plot histograms of sums of squares of normal random numbers](https://chnosz.net/guest/plotmydata/test-animation.gif)
-
-Note: In this example, the agent uses the `Hide` tool to modify R variables without returning the results.
-This way the LLM isn't flooded with thousands of tokens representing random numbers.
+![Animation of using PlotMyData to plot, download, upload, and explore data](https://chnosz.net/guest/plotmydata/animation-2.gif)
 
 ## Features
 
 - Multiple data sources: Upload a file, provide a URL, or use built-in [R datasets]
-- Data awareness: Uploaded files are automatically summarized for the LLM
+- Data awareness: Data files are automatically summarized for the LLM
   - *This lets you describe a plot without knowing the exact variable names*
 - Code generation: The LLM writes R code based on its internal knowledge
 - Code execution: Tools are provided for making plots with base [R graphics] (default) and [ggplot2]
   - *To use ggplot2, just mention "ggplot" or "ggplot2" in your message*
-- Instant visualization: Plots are shown in the chat interface and downloadable as artifacts
-- Interactive analysis: The agent uses an R session so the environment persists across chat messages and tool calls
+- Instant visualization: Plots are shown in the chat interface and downloadable as PNG files
+- Interactive analysis: The agent uses an R session so variables persist across invocations
 
-## Running the app
+## Running the application
 
-The app can be run with or without a container.
+The application can be run with or without a container.
 
 <details open>
 <summary><strong>Containerless</strong></summary>
@@ -58,27 +52,20 @@ This uses your OpenAI API key (`sk-proj-...`) from `secret.openai-api-key`.
 docker compose up
 ```
 
-Press `w` to start watching file changes.
-Alternatively, use this command so changes to the R and Python code on the host computer are reflected in the running project.
-
-```sh
-docker compose watch
-```
 </details>
 
 <details>
 <summary><strong>Changing the model</strong></summary>
 
-The remote LLM is gpt-4o-mini.
-If you want to use a different one, change it in `entrypoint.sh`.
+If you want to change the remote LLM from the default (gpt-4o), change it in the startup script (`run_web.sh` or `entrypoint.sh`).
 
-To use a local LLM running on your GPU, install [Docker Model Runner] before running this command.
+To use a local LLM, install [Docker Model Runner] then run this command.
 
 ```sh
 docker compose -f compose.yaml -f model-runner.yaml up
 ```
 
-The local LLM is [Gemma 3]; this can be changed in `model-runner.yaml`.
+See `model-runner.yaml` to change the local LLM used.
 </details>
 
 ## Examples
@@ -121,7 +108,7 @@ Accuracy = fraction of correct plots.
 | 03 | 40 | [b8e5f8c] | 0.38 | Add agent for loading and summarizing data
 
 <details>
-<summary>Evals management</summary>
+<summary>Evals info</summary>
 
 The repo tracks both evaluation sets and prompt sets.
 For example, the `evals/01` directory contains all results for the first evaluation set using different prompt sets.
@@ -144,18 +131,17 @@ This app allows:
 
 </details>
 
-## Under the hood
+## Architecture
 
-- Model Context Protocol (MCP) allows AI agents to interact with external tools in a client-server setup
-- We connect an [Agent Development Kit] client to an MCP server from the [mcptools] R package
-- For access from R, file uploads are saved as artifacts using an [ADK plugin], then as temporary files using a callback function
-- `PlotMyData/__init__.py` has code to reduce log verbosity and is modified from [docker/compose-for-agents]
+- An [Agent Development Kit] client is connected to an MCP server from the [mcptools] R package
+- The startup scripts launch a persistent R session with some preloaded packages and helper functions
+- Data files are saved in a temporary directory using ADK's artifacts and callbacks
+  - This is how the R session can access the files
 
 Container notes:
 
 - The Docker image is based on [rocker/r-ver] and adds R packages and a Python installation
 - [Docker Compose] is used for port mapping, secrets, and watching file changes with [Docker Watch]
-- The ADK web UI is run with the [`--reload_agents`] flag so that changes to `agent.py` on the host system are reflected in the running container
 
 ## Licenses
 
@@ -164,20 +150,17 @@ Container notes:
 - `breast-cancer.csv` (the CSV version from [Kaggle]) is licensed under CC0;
   the original dataset (from the [UCI Machine Learning Repository]) is licensed under CC BY 4.0
 
-[R software environment]: https://www.r-project.org/
+[R]: https://www.r-project.org/
 [R datasets]: https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/00Index.html
 [R graphics]: https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/00Index.html
 [ggplot2]: https://ggplot2.tidyverse.org/
 [Agent Development Kit]: https://google.github.io/adk-docs/
 [mcptools]: https://github.com/posit-dev/mcptools
 [Docker Model Runner]: https://docs.docker.com/ai/model-runner/
-[Gemma 3]: https://deepmind.google/models/gemma/gemma-3/
 [docker/compose-for-agents]: https://github.com/docker/compose-for-agents
-[ADK plugin]: https://medium.com/google-cloud/2-minute-adk-manage-context-efficiently-with-artifacts-6fcc6683d274
 [rocker/r-ver]: https://rocker-project.org/images/versioned/r-ver
 [Docker Compose]: https://docs.docker.com/compose/
 [Docker Watch]: https://docs.docker.com/compose/how-tos/file-watch/
-[`--reload_agents`]: https://github.com/google/adk-python/commit/e545e5a570c1331d2ed8fda31c7244b5e0f71584
 [UCI Machine Learning Repository]: https://doi.org/10.24432/C5DW2B
 [Kaggle]: https://www.kaggle.com/datasets/yasserh/breast-cancer-dataset
 
