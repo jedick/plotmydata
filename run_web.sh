@@ -1,14 +1,7 @@
 #!/bin/sh
 
-# MCP session setup for persistent R environment
-
-# Launch an *interactive* (i.e., long-running) R session and execute the mcp_session() command in the session
-
-# Create .Rprofile to run mcp_session() when R starts
-cat > .Rprofile << 'EOF'
-options(repos = c(CRAN = "https://cloud.r-project.org"))
-library(tidyverse); source('data_summary.R'); mcptools::mcp_session()
-EOF
+# Use profile for persistent R session
+cp profile.R .Rprofile
 
 # Start R in a detached tmux session named R-session
 # https://stackoverflow.com/questions/33426159/starting-a-new-tmux-session-and-detaching-it-all-inside-a-shell-script
@@ -23,6 +16,8 @@ cleanup() {
   # Kill the R session
   #tmux kill-session -t R-session
   screen -X -S R-session quit
+  # Remove the profile file
+  rm .Rprofile
 }
 
 # Set the trap to call cleanup on script termination

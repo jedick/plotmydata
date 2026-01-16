@@ -3,12 +3,8 @@
 # Exit immediately on errors
 set -e
 
-# MCP session setup for persistent R environment
-# Create .Rprofile to run mcp_session() when R starts
-cat > .Rprofile << 'EOF'
-options(repos = c(CRAN = "https://cloud.r-project.org"))
-library(tidyverse); source('data_summary.R'); mcptools::mcp_session()
-EOF
+# Use profile for persistent R session
+cp profile.R .Rprofile
 
 # Start R in a detached screen session
 # TODO: Look at using supervisord for another way to run multiple services

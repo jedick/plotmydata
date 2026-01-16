@@ -8,12 +8,9 @@ fi
 
 EVAL_NUMBER="$1"
 
-# Run mcp_session() when R starts up to make the session available to the mcptools server
-# NOTE: mcp_session() needs to be run in an *interactive* R session, so we can't put it in server.R
-cat > .Rprofile << 'EOF'
-options(repos = c(CRAN = "https://cloud.r-project.org"))
-library(tidyverse); source('data_summary.R'); mcptools::mcp_session()
-EOF
+# Use profile for persistent R session
+cp profile.R .Rprofile
+
 # Start R in a detached tmux session named R-session
 # https://stackoverflow.com/questions/33426159/starting-a-new-tmux-session-and-detaching-it-all-inside-a-shell-script
 tmux new-session -d -s R-session "R"
@@ -23,6 +20,8 @@ cleanup() {
   echo "Script is being terminated. Cleaning up..."
   # Kill the R session
   tmux kill-session -t R-session
+  # Remove the profile file
+  rm .Rprofile
 }
 
 # Set the trap to call cleanup on script termination
