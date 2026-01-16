@@ -129,7 +129,7 @@ To run evals, copy the latest eval CSV file to `evals/evals.csv`.
 Then use e.g. `run_eval.sh 1` to run the first eval.
 This script: 1) saves the tool calls, generated code, and current date to the CSV file and 2) saves the generated image to the `evals/generated` directory.
 
-After running evals, change to the `evals` directory and run `streamlit run edit_evals.py` to edit the eval CSV file.
+After running evals, change to the `evals` directory and run `streamlit run view.py` to edit the eval CSV file.
 This app allows:
 - Choosing an eval to edit
 - Viewing the reference and generated images side-by-side

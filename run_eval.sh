@@ -27,7 +27,11 @@ cleanup() {
 # Set the trap to call cleanup on script termination
 trap cleanup SIGINT SIGTERM
 
-# Startup the ADK eval
+# Suppress e.g. UserWarning: [EXPERIMENTAL] BaseAuthenticatedTool: This feature is experimental ...
+# https://github.com/google/adk-python/commit/4afc9b2f33d63381583cea328f97c02213611529
+export ADK_SUPPRESS_EXPERIMENTAL_FEATURE_WARNINGS=true
+
+# Define the model
 export OPENAI_MODEL_NAME=gpt-4o
 
 # Run the eval using Python script

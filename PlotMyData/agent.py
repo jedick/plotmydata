@@ -28,7 +28,7 @@ server_params = StdioServerParameters(
     ],
 )
 # STDIO transport to local R MCP server
-connection_params = StdioConnectionParams(server_params=server_params, timeout=30)
+connection_params = StdioConnectionParams(server_params=server_params, timeout=60)
 
 # Define model
 # If we're using the OpenAI API, get the value of OPENAI_MODEL_NAME set by entrypoint.sh

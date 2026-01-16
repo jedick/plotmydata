@@ -23,7 +23,13 @@ cleanup() {
 # Set the trap to call cleanup on script termination
 trap cleanup SIGINT SIGTERM
 
-# Startup the ADK web UI
+# Define the model
 export OPENAI_MODEL_NAME=gpt-4o
+
+# Suppress e.g. UserWarning: [EXPERIMENTAL] BaseAuthenticatedTool: This feature is experimental ...
+# https://github.com/google/adk-python/commit/4afc9b2f33d63381583cea328f97c02213611529
+export ADK_SUPPRESS_EXPERIMENTAL_FEATURE_WARNINGS=true
+
+# Startup the ADK web UI
 OPENAI_API_KEY=`cat secret.openai-api-key` adk web --reload_agents --log_level=WARNING
 

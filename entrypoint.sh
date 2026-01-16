@@ -18,6 +18,10 @@ export PATH="/opt/venv/bin:$PATH"
 export OPENAI_MODEL_NAME=gpt-4o
 echo "Using OpenAI with ${OPENAI_MODEL_NAME}"
 
+# Suppress e.g. UserWarning: [EXPERIMENTAL] BaseAuthenticatedTool: This feature is experimental ...
+# https://github.com/google/adk-python/commit/4afc9b2f33d63381583cea328f97c02213611529
+export ADK_SUPPRESS_EXPERIMENTAL_FEATURE_WARNINGS=true
+
 # For local development, the API key is read from a file
 # (not needed on HF Spaces, where secrets are injected into container's environment)
 if [ -z "$OPENAI_API_KEY" ]; then
