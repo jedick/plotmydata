@@ -86,56 +86,97 @@ async def run_eval(
         # Send the query and get response
         print("Sending query to agent...")
 
-        # run_async executes the agent logic and yields events
-        async for event in runner.run_async(
-            user_id=session.user_id, session_id=session.id, new_message=content
-        ):
-            # Append events to event history
-            event_history.append(
-                f"[Event] Author: {event.author}, Type: {type(event).__name__}, Final: {event.is_final_response()}, Content: {event.content}"
-            )
+        # Track if we need to send a confirmation response
+        current_message = content
+        max_iterations = 10  # Prevent infinite loops
+        iteration = 0
 
-            # Parse event content to extract tool calls
-            if hasattr(event, "content") and event.content:
-                for part in event.content.parts:
-                    if hasattr(part, "function_call") and part.function_call:
-                        fc = part.function_call
-                        tool_name = fc.name
+        while iteration < max_iterations:
+            iteration += 1
+            install_confirmation_needed = False
 
-                        # Skip transfer_to_agent
-                        if tool_name == "transfer_to_agent":
-                            continue
+            # run_async executes the agent logic and yields events
+            async for event in runner.run_async(
+                user_id=session.user_id, session_id=session.id, new_message=current_message
+            ):
+                # Append events to event history
+                event_history.append(
+                    f"[Event] Author: {event.author}, Type: {type(event).__name__}, Final: {event.is_final_response()}, Content: {event.content}"
+                )
 
-                        # Record tool name
-                        tool_calls.append(tool_name)
+                # Check if Install agent is asking for confirmation
+                if (event.author == "Install" and event.is_final_response() and 
+                    hasattr(event, "content") and event.content):
+                    # Check if the content contains a confirmation request
+                    for part in event.content.parts:
+                        if hasattr(part, "text") and part.text:
+                            text = part.text.lower()
+                            # Look for confirmation request patterns
+                            # The Install agent is instructed to ask "Should I proceed with installing..."
+                            if ("should i proceed" in text or 
+                                "proceed with installing" in text or
+                                "proceed with" in text and "install" in text or
+                                ("install" in text and ("confirm" in text or "proceed" in text))):
+                                install_confirmation_needed = True
+                                print("Detected Install agent confirmation request, automatically responding 'yes'")
+                                break
 
-                        # Extract code based on tool type
-                        if tool_name in [
-                            "run_hidden",
-                            "run_visible",
-                            "make_plot",
-                            "make_ggplot",
-                        ]:
-                            # Extract code from 'code' argument
-                            if hasattr(fc, "args") and "code" in fc.args:
-                                gen_code.append(f"# {tool_name}\n{fc.args['code']}")
+                # Parse event content to extract tool calls
+                if hasattr(event, "content") and event.content:
+                    for part in event.content.parts:
+                        if hasattr(part, "function_call") and part.function_call:
+                            fc = part.function_call
+                            tool_name = fc.name
+
+                            # Skip transfer_to_agent
+                            if tool_name == "transfer_to_agent":
+                                continue
+
+                            # Record tool name
+                            tool_calls.append(tool_name)
+
+                            # Extract code based on tool type
+                            if tool_name in [
+                                "run_hidden",
+                                "run_visible",
+                                "make_plot",
+                                "make_ggplot",
+                            ]:
+                                # Extract code from 'code' argument
+                                if hasattr(fc, "args") and "code" in fc.args:
+                                    gen_code.append(f"# {tool_name}\n{fc.args['code']}")
+                                else:
+                                    gen_code.append(f"# {tool_name}\n")
                             else:
-                                gen_code.append(f"# {tool_name}\n")
-                        else:
-                            # For other tools (help_package, help_topic, etc), put all args as comments
-                            if hasattr(fc, "args") and fc.args:
-                                # Format args nicely - use repr to get proper string representation
-                                args_items = []
-                                for key, value in fc.args.items():
-                                    args_items.append(f"'{key}': {repr(value)}")
-                                args_str = "\n".join(f"# {item}" for item in args_items)
-                                gen_code.append(f"# {tool_name}\n{args_str}")
-                            else:
-                                gen_code.append(f"# {tool_name}")
+                                # For other tools (help_package, help_topic, etc), put all args as comments
+                                if hasattr(fc, "args") and fc.args:
+                                    # Format args nicely - use repr to get proper string representation
+                                    args_items = []
+                                    for key, value in fc.args.items():
+                                        args_items.append(f"'{key}': {repr(value)}")
+                                    args_str = "\n".join(f"# {item}" for item in args_items)
+                                    gen_code.append(f"# {tool_name}\n{args_str}")
+                                else:
+                                    gen_code.append(f"# {tool_name}")
 
-            # Notify if final response was received
-            if event.is_final_response():
-                print("Final response received")
+                # Notify if final response was received
+                if event.is_final_response():
+                    print("Final response received")
+
+            # If Install agent asked for confirmation, send "yes" and continue
+            if install_confirmation_needed:
+                current_message = genai_types.Content(
+                    role="user", parts=[genai_types.Part(text="yes")]
+                )
+                print("Sending automatic 'yes' response to Install agent")
+                # Continue the loop to process the response
+                continue
+            else:
+                # No confirmation needed, break out of the loop
+                break
+        
+        if iteration >= max_iterations:
+            print(f"Warning: Reached maximum iterations ({max_iterations}) in eval runner loop")
 
         # Get the artifact keys
         artifact_keys = await runner.artifact_service.list_artifact_keys(
