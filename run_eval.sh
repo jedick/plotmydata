@@ -28,8 +28,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Startup the ADK eval
-#export OPENAI_MODEL_NAME=gpt-4o
-export OPENAI_MODEL_NAME=gpt-4o-mini
+export OPENAI_MODEL_NAME=gpt-4o
 
 # Run the eval using Python script
 # The Python script will read the prompt from evals.csv and run ADK
