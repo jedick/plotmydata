@@ -94,18 +94,26 @@ See `model-runner.yaml` to change the local LLM used.
 ![Histogram of squared normal random numbers created with an AI agent using R session](https://chnosz.net/guest/plotmydata/use-session.png)
 </details>
 
-## Evals
+## Evaluations
+
+Most recent eval run: **75% accuracy** on 40 cases with GPT-4o.
+
+<details>
+<summary>Evals history</summary>
 
 Accuracy = fraction of correct plots.
-**Plot correctness is currently judged by a human.**
+Plot correctness is judged by a human.
 
 | Eval set | Size | Prompt set | Accuracy | Notes |
 |-|-|-|-|-|
-| 01 | 27 | [bb4eead] | 0.41 | Mainly base graphics: barplot, boxplot, cdplot, coplot, contour, dotchart, filled.contour, grid
-| 01 | 27 | [e9180aa] | 0.52 | Add help tools to get R documentation
-| 02 | 37 | [e9180aa] | 0.49 | More base graphics: hist, image, lines, matplot, mosaicplot, pairs, rug, spineplot, plot.window
-| 03 | 40 | [30c22a1] | 0.50 | Handle uploaded CSV files
+| 03 | 40 | [24fb91f] | 0.75 | **Model: gpt-4o**
 | 03 | 40 | [b8e5f8c] | 0.38 | Add agent for loading and summarizing data
+| 03 | 40 | [30c22a1] | 0.50 | Handle uploaded CSV files
+| 02 | 37 | [e9180aa] | 0.49 | More base graphics: hist, image, lines, matplot, mosaicplot, pairs, rug, spineplot, plot.window
+| 01 | 27 | [e9180aa] | 0.52 | Add help tools to get R documentation
+| 01 | 27 | [bb4eead] | 0.41 | Mainly base graphics: barplot, boxplot, cdplot, coplot, contour, dotchart, filled.contour, grid (**Model: gpt-4o-mini**)
+
+</details>
 
 <details>
 <summary>Evals info</summary>
@@ -164,8 +172,9 @@ Container notes:
 [UCI Machine Learning Repository]: https://doi.org/10.24432/C5DW2B
 [Kaggle]: https://www.kaggle.com/datasets/yasserh/breast-cancer-dataset
 
-[bb4eead]: https://github.com/jedick/plotmydata/commit/bb4eead2346d936f9c83108b16f20faf3e3c522c
-[e9180aa]: https://github.com/jedick/plotmydata/commit/e9180aa363195fd2cc011e11e4febc0f544f7878
-[30c22a1]: https://github.com/jedick/plotmydata/commit/30c22a166a237bfe26413b6c28278a6c467a65a7
+[24fb91f]: https://github.com/jedick/plotmydata/commit/24fb91f7d810da7f0078c1b9cb13bf82dde61445
 [b8e5f8c]: https://github.com/jedick/plotmydata/commit/b8e5f8ce5e03360b9bde26ff32acb7180d969694
+[30c22a1]: https://github.com/jedick/plotmydata/commit/30c22a166a237bfe26413b6c28278a6c467a65a7
+[e9180aa]: https://github.com/jedick/plotmydata/commit/e9180aa363195fd2cc011e11e4febc0f544f7878
+[bb4eead]: https://github.com/jedick/plotmydata/commit/bb4eead2346d936f9c83108b16f20faf3e3c522c
 
