@@ -5,20 +5,23 @@
 PlotMyData is an agentic data analysis and visualization system.
 It follows your prompts to drive an [R] session.
 
-You can start with example datasets, upload your own data, or download data from a URL (currently CSV files are supported).
+You can start with example datasets, upload your own data, or download data from a URL.
 If you want to ask about the data or transform it before plotting, just say what you want to do.
 
 ![Animation of using PlotMyData to plot, download, upload, and explore data](https://chnosz.net/guest/plotmydata/animation-2.gif)
 
 ## Features
 
-- Multiple data sources: Upload a file, provide a URL, or use built-in [R datasets]
+- Multiple data sources: Use built-in [R datasets] or user-provided data (currently CSV files are supported)
 - Interactive analysis: The system uses an R session so variables persist across invocations
 - Instant visualization: Plots are shown in the chat interface and are downloadable as PNG files
 
 ### Agents and tools refined through many usage trials
 
+- *Help tools*
+  - Provide access to help pages for packages and topics
 - *Data agent*
+  - Knows about R datasets and can access uploaded files or URLs
   - Data files are automatically summarized for the LLM
   - *This lets you describe a plot without knowing the exact variable names*
 - *Run agent*
@@ -37,7 +40,7 @@ If you want to ask about the data or transform it before plotting, just say what
 
 The application can be run with or without a container.
 
-<details open>
+<details>
 <summary><strong>Containerless</strong></summary>
 
 - Install R and run `install.packages(c("ellmer", "mcptools", "readr", "ggplot2", "tidyverse"))`
@@ -82,28 +85,32 @@ See `model-runner.yaml` to change the local LLM used.
 
 ## Examples
 
-<details open>
-<summary><strong>Plot data:</strong> <i>Plot radius_worst (y) vs radius_mean (x) from https://github.com/jedick/plotmydata/raw/refs/heads/main/evals/data/breast-cancer.csv. Add a blue 1:1 line and title "Breast Cancer Wisconsin (Diagnostic)".</i></summary>
+<details>
+<summary><strong>Plot data</strong></summary>
 
-![Plot of breast cancer data created by an AI agent instructed to use a CSV file at a given URL](https://chnosz.net/guest/plotmydata/breast-cancer.png)
+- *Plot radius_worst (y) vs radius_mean (x) from https://github.com/jedick/plotmydata/raw/refs/heads/main/evals/data/breast-cancer.csv. Add a blue 1:1 line and title "Breast Cancer Wisconsin (Diagnostic)".*
+
+![Plot of breast cancer data](https://chnosz.net/guest/plotmydata/breast-cancer.png)
 
 </details>
 
 <details>
-<summary><strong>Plot functions:</strong> <i>Plot a Sierpiński Triangle</i></summary>
+<summary><strong>Plot functions</strong></summary>
 
-<img width="50%" alt="Chat with AI agent to plot Sierpiński Triangle" src="https://chnosz.net/guest/plotmydata/sierpinski-triangle.png" />
+- *Plot a Sierpiński Triangle*
+
+<img width="50%" alt="Chat session with AI agent to plot a Sierpiński Triangle" src="https://chnosz.net/guest/plotmydata/sierpinski-triangle.png" />
 
 </details>
 
 <details>
-<summary><strong>Interactive analysis:</strong> [click to open] </summary>
+<summary><strong>Interactive analysis</strong></summary>
 
 - *Save 100 random numbers from a normal distribution in x*
 - *Run y = x^2*
 - *Plot a histogram of y*
 
-![Histogram of squared normal random numbers created with an AI agent using R session](https://chnosz.net/guest/plotmydata/use-session.png)
+![Histogram of squared normal random numbers](https://chnosz.net/guest/plotmydata/use-session.png)
 </details>
 
 ## Evaluations
@@ -168,8 +175,7 @@ Container notes:
 
 - This code in repo is licensed under MIT
 - Some examples used in evals are taken from R and are licensed under GPL-2|GPL-3
-- `breast-cancer.csv` (the CSV version from [Kaggle]) is licensed under CC0;
-  the original dataset (from the [UCI Machine Learning Repository]) is licensed under CC BY 4.0
+- `breast-cancer.csv` (from [UCI Machine Learning Repository] via [Kaggle]) is licensed under CC BY 4.0
 
 [R]: https://www.r-project.org/
 [R datasets]: https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/00Index.html
