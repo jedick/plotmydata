@@ -97,7 +97,9 @@ async def run_eval(
 
             # run_async executes the agent logic and yields events
             async for event in runner.run_async(
-                user_id=session.user_id, session_id=session.id, new_message=current_message
+                user_id=session.user_id,
+                session_id=session.id,
+                new_message=current_message,
             ):
                 # Append events to event history
                 event_history.append(
@@ -105,20 +107,32 @@ async def run_eval(
                 )
 
                 # Check if Install agent is asking for confirmation
-                if (event.author == "Install" and event.is_final_response() and 
-                    hasattr(event, "content") and event.content):
+                if (
+                    event.author == "Install"
+                    and event.is_final_response()
+                    and hasattr(event, "content")
+                    and event.content
+                ):
                     # Check if the content contains a confirmation request
                     for part in event.content.parts:
                         if hasattr(part, "text") and part.text:
                             text = part.text.lower()
                             # Look for confirmation request patterns
                             # The Install agent is instructed to ask "Should I proceed with installing..."
-                            if ("should i proceed" in text or 
-                                "proceed with installing" in text or
-                                "proceed with" in text and "install" in text or
-                                ("install" in text and ("confirm" in text or "proceed" in text))):
+                            if (
+                                "should i proceed" in text
+                                or "proceed with installing" in text
+                                or "proceed with" in text
+                                and "install" in text
+                                or (
+                                    "install" in text
+                                    and ("confirm" in text or "proceed" in text)
+                                )
+                            ):
                                 install_confirmation_needed = True
-                                print("Detected Install agent confirmation request, automatically responding 'yes'")
+                                print(
+                                    "Detected Install agent confirmation request, automatically responding 'yes'"
+                                )
                                 break
 
                 # Parse event content to extract tool calls
@@ -154,7 +168,9 @@ async def run_eval(
                                     args_items = []
                                     for key, value in fc.args.items():
                                         args_items.append(f"'{key}': {repr(value)}")
-                                    args_str = "\n".join(f"# {item}" for item in args_items)
+                                    args_str = "\n".join(
+                                        f"# {item}" for item in args_items
+                                    )
                                     gen_code.append(f"# {tool_name}\n{args_str}")
                                 else:
                                     gen_code.append(f"# {tool_name}")
@@ -174,9 +190,11 @@ async def run_eval(
             else:
                 # No confirmation needed, break out of the loop
                 break
-        
+
         if iteration >= max_iterations:
-            print(f"Warning: Reached maximum iterations ({max_iterations}) in eval runner loop")
+            print(
+                f"Warning: Reached maximum iterations ({max_iterations}) in eval runner loop"
+            )
 
         # Get the artifact keys
         artifact_keys = await runner.artifact_service.list_artifact_keys(
