@@ -199,20 +199,22 @@ def main():
             st.rerun()
 
     with col2:
-        # Navigation buttons
-        navcol1, navcol2 = st.columns(2)
-        with navcol1:
-            if shortcut_button("⬆ Previous", "pageup", use_container_width=True):
-                if st.session_state.current_row > 0:
-                    # Navigate to the previous row
-                    st.session_state.current_row -= 1
-                    st.rerun()
-        with navcol2:
-            if shortcut_button("⬇ Next", "pagedown", use_container_width=True):
-                if st.session_state.current_row < len(df) - 1:
-                    # Navigate to the next row
-                    st.session_state.current_row += 1
-                    st.rerun()
+        with st.container():
+            st.markdown("Navigation")
+            # Navigation buttons
+            navcol1, navcol2 = st.columns(2)
+            with navcol1:
+                if shortcut_button("⬆", "pageup", use_container_width=True):
+                    if st.session_state.current_row > 0:
+                        # Navigate to the previous row
+                        st.session_state.current_row -= 1
+                        st.rerun()
+            with navcol2:
+                if shortcut_button("⬇", "pagedown", use_container_width=True):
+                    if st.session_state.current_row < len(df) - 1:
+                        # Navigate to the next row
+                        st.session_state.current_row += 1
+                        st.rerun()
 
     # Load current row data
     current_data = df.iloc[st.session_state.current_row].to_dict()
