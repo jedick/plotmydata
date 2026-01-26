@@ -28,4 +28,4 @@ if [ -z "$OPENAI_API_KEY" ]; then
   export OPENAI_API_KEY=$(cat /run/secrets/openai-api-key)
 fi
 
-exec adk web --host 0.0.0.0 --port 8080 --reload_agents
+exec adk web --host 0.0.0.0 --port 8080 --reload_agents --log_level=WARNING
